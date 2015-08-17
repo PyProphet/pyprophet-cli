@@ -1,0 +1,4 @@
+.*.sw?
+lsf*
+__pycache__
+*.pyc

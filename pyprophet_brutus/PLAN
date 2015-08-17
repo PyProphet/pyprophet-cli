@@ -1,0 +1,55 @@
+
+"""
+bsub -J subsample[1-4] pyrophet-brutus subsample --data_folder /tmp/in_files --working_folder /tmp/working_folder --job_number $LSB_JOBINDEX --num_jobs $LSB_JOBINDEX_END
+
+    -> copy in_files to $TMPDIR
+    -> subsample
+    -> write subsampled files into working folder
+
+bsub -J learn_weights -w "done(subsample)" pyprophet-brutus learn_weights --working_folder /tmp/result_folder
+
+    -> learn weights
+    -> writes weights
+
+bsub -J infer_scores[1-4] -w "done(learn)" pyprophet-brutus infer_scores --data_folder /tmp/in_files  --working_folder /tmp/working_folder
+
+    -> infer error statistics from learned weights
+       collect target/decoy scores for computing final statistics.
+    -> writes scores
+
+bsub -J infer_qvalues -w "done(infer_scores)" pyprophet-brutus infer_q_values --working_folder /tmp/working_folder
+
+    -> computes storey stats from scores from previous step
+    -> stores the stats
+
+bsub -J assign_q_scores[1-4] -w "done(infer_scores)" pyprophet-brutus assign_q_scores --data_folder /tmp/in_files --working_folder /tmp/working_folder
+
+    -> applies scorint to daa files
+    -> stores them to data folder
+
+
+GENERAL CONCEPT:
+
+    bsub -J $NAME[1-$NUM_JOBS] -w "done(PREVIOUS_NAME)" pyprophet-brutus $NAME --data_folder ... --working_folder ..  --job_number .. --num_jobs ...
+
+
+class SubSample(BrutusJob):
+
+    multi_job = True
+    expect = ["data_folder", "working_folder"]
+    requires = None
+
+
+class LearnWeights(BrutusJob):
+
+    multi_job = False
+    expect = ["working_folder"]
+    requires = SubSample
+
+
+--> create  bsub commands + provide implementation
+
+
+
+"""
+
