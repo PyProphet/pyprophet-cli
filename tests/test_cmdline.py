@@ -1,10 +1,10 @@
 # encoding: utf-8
 from __future__ import print_function
-import pdb
 import subprocess
 import pytest
 import os
 import shutil
+import collections
 
 import pandas
 
@@ -15,36 +15,32 @@ def test_data_folder():
     return os.path.join(here, "data")
 
 
-
-def test_0(tmpdir):
-    out = tmpdir.join("log.txt").strpath
-    cmd = ["pyprophet-brutus check --log-level=debug --log-file=%s" % out]
-    ret_code = subprocess.call(cmd, shell=True)
-    lines = open(out, "r").readlines()
-    assert len(lines) == 1
-
-
-def test_subsample(tmpdir, test_data_folder):
-    """
-    setup: - data files
-           - create temp datafolder + workingfolder
-           - copy data file to datafolder
-           - run command
-           - check working folder
-
-    cmdline:  pyprophet-brutus subsample --job-number 1 --job-count 1 --data-folder XXX
-    --working-folder YYY --sample-factor 0.1
-    """
-    working_folder = tmpdir.join("working_folder").strpath
+@pytest.fixture
+def setup(tmpdir, test_data_folder):
     data_folder = tmpdir.join("data_folder").mkdir().strpath
+    working_folder = tmpdir.join("working_folder").strpath
     shutil.copy(os.path.join(test_data_folder, "test_data.txt"), data_folder)
+
+    Setup = collections.namedtuple("Setup", "data_folder working_folder")
+    return Setup(data_folder, working_folder)
+
+
+def test_check(setup):
+    cmd = ("pyprophet-brutus check --data-folder %s" % setup.data_folder)
+    ret_code = subprocess.call(cmd, shell=True)
+    assert ret_code == 0
+
+
+def test_subsample(setup):
     cmd = ("pyprophet-brutus subsample --run-local 1 --job-number 1 --job-count 1 "
            "--sample-factor 0.01 "
            "--random-seed 43 "
-           "--data-folder %s --working-folder %s") % (data_folder, working_folder)
+           "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
-    files = os.listdir(working_folder)
+    assert ret_code == 0
+    files = os.listdir(setup.working_folder)
     assert len(files) == 1
+    assert files[0] == "subsampled_test_data.txt"
 
-    subsamples = pandas.read_csv(os.path.join(working_folder, files[0]), sep="\t")
+    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[0]), sep="\t")
     assert subsamples.shape == (120, 20)

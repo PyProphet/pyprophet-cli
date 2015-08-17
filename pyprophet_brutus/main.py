@@ -30,6 +30,7 @@ for sub_class in Job.__subclasses__():
             logger.addHandler(h)
             options["logger"] = logger
             sub_class().run(**options)
+        handler.__doc__ = getattr(sub_class, "__doc__", "")
         return handler
 
     handler = click.option("--log-level", type=click.Choice(levels), default="debug")(create())

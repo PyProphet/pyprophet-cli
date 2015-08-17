@@ -10,6 +10,8 @@ import tempfile
 import click
 import pandas
 
+from . import tools
+
 Path = click.Path
 option = click.option
 
@@ -52,37 +54,34 @@ class JobMeta(type):
 
 class Job(object):
 
+    SEP = "\t"
+    CHUNK_SIZE = 10000
+    ID_COL = "transition_group_id"
+
     __metaclass__ = JobMeta
 
     def set_instance_attributes(self, options):
         self.__dict__.update(options)
 
 
-class Check(Job):
+class CheckInputs(Job):
+
+    """runs validity tests on input files in DATA_FOLDER. this command mostly checks
+    if the column names are consistent.
+    """
 
     requires = None
     command_name = "check"
-    options = []
-
-    def run(self, **options):
-        self.set_instance_attributes(options)
-        self.logger.error("check command called")
-
-
-class _CheckInputs(Job):
-
-    requires = None
-    command_name = "subsample"
     options = [data_folder]
 
     def run(self, **options):
-        raise NotImplementedError("not yet implemented")
         self.set_instance_attributes(options)
         self._check_headers()
 
     def _check_headers(self):
+        input_file_pathes = tools.scan_files(self.data_folder)
         headers = set()
-        for path in self.input_file_pathes:
+        for path in input_file_pathes:
             header = pandas.read_csv(path, sep=self.SEP, nrows=1).columns
             expected = self.ID_COL
             if header[0] != expected:
@@ -99,9 +98,10 @@ class _CheckInputs(Job):
 
 class Subsample(Job):
 
-    SEP = "\t"
-    CHUNK_SIZE = 10000
-    ID_COL = "transition_group_id"
+    """subsamples transition groups from given input files in DATA_FOLDER.
+    For following procession steps the data is written to the provided WORKING_FOLDER.
+    """
+
 
     requires = None
     command_name = "subsample"
@@ -125,13 +125,7 @@ class Subsample(Job):
             assert self.tmp_dir is not None, "$TMPDIR not set !!?!"
         if not os.path.exists(self.working_folder):
             os.makedirs(self.working_folder)
-        file_names = os.listdir(self.data_folder)
-        self.input_file_pathes = []
-        for file_name in file_names:
-            path = os.path.join(self.data_folder, file_name)
-            if os.path.isfile(path):
-                self.input_file_pathes.append(path)
-
+        self.input_file_pathes = tools.scan_files(self.data_folder)
         if not self.input_file_pathes:
             raise InvalidInput("data folder %s is empty" % self.data_folder)
 
@@ -154,11 +148,10 @@ class Subsample(Job):
         self.logger.info("start subsample %s" % path)
 
         ids = []
-
-        line_count = 0
+        overall_line_count = 0
         for chunk in pandas.read_csv(path, sep=self.SEP, chunksize=self.CHUNK_SIZE):
             ids.extend(chunk[self.ID_COL])
-            line_count += len(chunk)
+            overall_line_count += len(chunk)
 
         line_counts = collections.Counter(ids)
 
@@ -172,13 +165,12 @@ class Subsample(Job):
             random.seed(self.random_seed)
         random.shuffle(valid_targets)
 
-        # now we iterate over the ids until the size limit for the
-        # result file is achieved:
+        # now we iterate over the ids until the size limit for the result file is achieved:
         consumed_lines = 0
-        total_lines = line_count * self.sample_factor
+        total_lines_output = overall_line_count * self.sample_factor
         sample_targets = []
         for (i, id_) in enumerate(valid_targets):
-            if consumed_lines > total_lines:
+            if consumed_lines > total_lines_output:
                 break
             consumed_lines += line_counts[id_]
             consumed_lines += line_counts["DECOY_" + id_]
@@ -206,13 +198,3 @@ class Subsample(Job):
                 write_header = False
 
         self.logger.info("wrote %s" % out_path)
-
-
-
-
-    def bsub_command_line(self):
-        """approx inverse to run: reassemble commandline for bsub,
-        requieres that  options were set before"""
-        # create commandline for self.options
-        return "bsub"
-
