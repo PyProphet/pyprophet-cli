@@ -23,7 +23,7 @@ setup(name='pyprophet-brutus',
       ],
       zip_safe=False,
       install_requires=[
-          "pyprophet",
+          "pyprophet>=0.14",
           "Click",
       ],
       entry_points={

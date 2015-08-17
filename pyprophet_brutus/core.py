@@ -1,5 +1,7 @@
-import pdb
 # vi: et sw=4 ts=4
+
+from __future__ import print_function
+
 
 import collections
 import os
@@ -11,6 +13,8 @@ import click
 import pandas
 
 from . import tools
+
+from pyprophet.pyprophet import PyProphet
 
 Path = click.Path
 option = click.option
@@ -60,9 +64,6 @@ class Job(object):
 
     __metaclass__ = JobMeta
 
-    def set_instance_attributes(self, options):
-        self.__dict__.update(options)
-
 
 class CheckInputs(Job):
 
@@ -74,8 +75,7 @@ class CheckInputs(Job):
     command_name = "check"
     options = [data_folder]
 
-    def run(self, **options):
-        self.set_instance_attributes(options)
+    def run(self):
         self._check_headers()
 
     def _check_headers(self):
@@ -102,7 +102,6 @@ class Subsample(Job):
     For following procession steps the data is written to the provided WORKING_FOLDER.
     """
 
-
     requires = None
     command_name = "subsample"
     options = [job_number, job_count, data_folder, working_folder, run_local,
@@ -110,9 +109,8 @@ class Subsample(Job):
                random_seed,
                ]
 
-    def run(self, **options):
+    def run(self):
         """run processing step from commandline"""
-        self.set_instance_attributes(options)
         self._setup()
         for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
             self._local_job(i)
@@ -162,6 +160,7 @@ class Subsample(Job):
 
         # we shuffle the target_ids randomly:
         if self.random_seed:
+            self.logger.info("set random seed to %r" % self.random_seed)
             random.seed(self.random_seed)
         random.shuffle(valid_targets)
 
@@ -198,3 +197,45 @@ class Subsample(Job):
                 write_header = False
 
         self.logger.info("wrote %s" % out_path)
+
+
+class Learn(Job):
+
+    """runs pyprophet learner on data files in WORKING_FOLDER.
+    writes weights files in this folder.
+    """
+
+    requires = Subsample
+    command_name = "learn"
+    options = [working_folder, random_seed]
+
+    def run(self):
+        if self.random_seed:
+            self.logger.info("set random seed to %r" % self.random_seed)
+            random.seed(self.random_seed)
+
+        pathes = tools.scan_files(self.working_folder, filter_by=".txt")
+        pyprophet = PyProphet()
+
+        self.logger.info("read subsampled files from %s" % self.working_folder)
+        for path in pathes:
+            self.logger.info("    read %s" % path)
+        tables = list(pyprophet.read_tables_iter(pathes, self.SEP))
+
+        self.logger.info("run pyprophet core algorithm")
+        result, scorer, weights = pyprophet._learn_and_apply(tables)
+        for line in str(result.summary_statistics).split("\n"):
+            self.logger.info(line.rstrip())
+
+        self.logger.info("write sum_stat_subsampled.txt")
+        with open(os.path.join(self.working_folder, "sum_stat_subsampled.txt"), "w") as fp:
+            result.summary_statistics.to_csv(fp, sep=self.SEP, index=False)
+
+        self.logger.info("write full_stat_subsampled.txt")
+        with open(os.path.join(self.working_folder, "full_stat_subsampled.txt"), "w") as fp:
+            result.final_statistics.to_csv(fp, sep=self.SEP, index=False)
+
+        self.logger.info("write weights.txt")
+        with open(os.path.join(self.working_folder, "weights.txt"), "w") as fp:
+            for w in weights:
+                print(w, file=fp, end=" ")

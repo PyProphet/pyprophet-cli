@@ -29,7 +29,11 @@ for sub_class in Job.__subclasses__():
             h.setFormatter(logging.Formatter(fmt))
             logger.addHandler(h)
             options["logger"] = logger
-            sub_class().run(**options)
+
+            inst = sub_class()
+            # set instance attributes according to command line options:
+            inst.__dict__.update(options)
+            inst.run()
         handler.__doc__ = getattr(sub_class, "__doc__", "")
         return handler
 
