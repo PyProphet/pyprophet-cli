@@ -19,19 +19,31 @@ from pyprophet.pyprophet import PyProphet
 Path = click.Path
 option = click.option
 
-job_number = option("--job-number", type=int, required=True)
-job_count = option("--job-count", type=int, required=True)
-data_folder = option("--data-folder",
+job_number = option("--job-number", default=1, help="1 <= job-number <= job-count [default=1]")
+job_count = option("--job-count", default=1, help="overall number of batch jobs [default=1]")
+data_folder = option("--data-folder", help="folder of input data to process",
                      type=Path(exists=True, file_okay=False, dir_okay=True, readable=True),
                      required=True)
 
 working_folder = option("--working-folder",
+                        help="folder for intermediate results which are needed by following processing steps",
                         type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
                         required=True)
 
-run_local = option("--run-local", type=bool, default=False)
+run_local = option("--run-local", is_flag=True,
+                   help="pyprophet runs on local machine, not on brutus lsf")
 
-random_seed = option("--random-seed", type=int)
+random_seed = option("--random-seed", type=int,
+                     help="set a fixed seed for reproducable results")
+
+
+def transform_sep(ctx, param, value):
+    return { "tab":"\t", "comma": ",", "semicolon": ";" }.get(value)
+
+
+separator = option("--separator", type=click.Choice(("tab", "comma", "semicolon")),
+                   default="tab", help="separator for input and output files [default=tab]",
+                   callback=transform_sep)
 
 
 
@@ -59,7 +71,6 @@ class JobMeta(type):
 class Job(object):
 
     SEP = "\t"
-    CHUNK_SIZE = 10000
     ID_COL = "transition_group_id"
 
     __metaclass__ = JobMeta
@@ -73,7 +84,7 @@ class CheckInputs(Job):
 
     requires = None
     command_name = "check"
-    options = [data_folder]
+    options = [data_folder, separator]
 
     def run(self):
         self._check_headers()
@@ -82,7 +93,7 @@ class CheckInputs(Job):
         input_file_pathes = tools.scan_files(self.data_folder)
         headers = set()
         for path in input_file_pathes:
-            header = pandas.read_csv(path, sep=self.SEP, nrows=1).columns
+            header = pandas.read_csv(path, sep=self.separator, nrows=1).columns
             expected = self.ID_COL
             if header[0] != expected:
                 raise InvalidInput("first column of %s has wrong name %r. exepected %r" %
@@ -104,8 +115,15 @@ class Subsample(Job):
 
     requires = None
     command_name = "subsample"
-    options = [job_number, job_count, data_folder, working_folder, run_local,
-               option("--sample-factor", required=True, type=float),
+    options = [job_number, job_count, run_local, separator, data_folder, working_folder,
+               option("--sample-factor", required=True, type=click.IntRange(1, 100),
+                      help="sample factor in percent"),
+               option("--chunk-size", default=100000,
+                      help="chunck size when reading input files, may impact processing speed "
+                           "[default=100000]",
+                      ),
+               option("--local-copy", is_flag=True,
+                      help="copy input files to an eventually faster tempfolder before subsampling"),
                random_seed,
                ]
 
@@ -127,27 +145,33 @@ class Subsample(Job):
         if not self.input_file_pathes:
             raise InvalidInput("data folder %s is empty" % self.data_folder)
 
+        self._pathes_of_files_for_processing = []
+        for path in self.input_file_pathes:
+            name = os.path.basename(path)
+            folder = self.tmp_dir if self.local_copy else self.data_folder
+            path = os.path.join(folder, name)
+            self._pathes_of_files_for_processing.append(path)
+
 
     def _local_job(self, i):
-        self._local_file_pathes = []
-        self._copy_to_local(i)
+        if self.local_copy:
+            self._copy_to_local(i)
         self._subsample(i)
 
     def _copy_to_local(self, i):
         path = self.input_file_pathes[i]
         self.logger.info("copy %s to %s" % (path, self.tmp_dir))
         shutil.copy(path, self.tmp_dir)
-        local_path = os.path.join(self.tmp_dir, os.path.basename(path))
-        self._local_file_pathes.append(local_path)
+
 
     def _subsample(self, i):
-        path = self._local_file_pathes[i]
+        path = self._pathes_of_files_for_processing[i]
 
         self.logger.info("start subsample %s" % path)
 
         ids = []
         overall_line_count = 0
-        for chunk in pandas.read_csv(path, sep=self.SEP, chunksize=self.CHUNK_SIZE):
+        for chunk in pandas.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
             ids.extend(chunk[self.ID_COL])
             overall_line_count += len(chunk)
 
@@ -166,7 +190,7 @@ class Subsample(Job):
 
         # now we iterate over the ids until the size limit for the result file is achieved:
         consumed_lines = 0
-        total_lines_output = overall_line_count * self.sample_factor
+        total_lines_output = overall_line_count * self.sample_factor / 100.0
         sample_targets = []
         for (i, id_) in enumerate(valid_targets):
             if consumed_lines > total_lines_output:
@@ -191,9 +215,9 @@ class Subsample(Job):
         with open(out_path, "w") as fp:
 
             write_header = True
-            for chunk in pandas.read_csv(path, sep=self.SEP, chunksize=self.CHUNK_SIZE):
+            for chunk in pandas.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
                 chunk = chunk[chunk[self.ID_COL].isin(sample_ids)]
-                chunk.to_csv(fp, sep=self.SEP, header=write_header, index=False)
+                chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
                 write_header = False
 
         self.logger.info("wrote %s" % out_path)
@@ -207,7 +231,7 @@ class Learn(Job):
 
     requires = Subsample
     command_name = "learn"
-    options = [working_folder, random_seed]
+    options = [working_folder, separator, random_seed]
 
     def run(self):
         if self.random_seed:
@@ -220,7 +244,7 @@ class Learn(Job):
         self.logger.info("read subsampled files from %s" % self.working_folder)
         for path in pathes:
             self.logger.info("    read %s" % path)
-        tables = list(pyprophet.read_tables_iter(pathes, self.SEP))
+        tables = list(pyprophet.read_tables_iter(pathes, self.separator))
 
         self.logger.info("run pyprophet core algorithm")
         result, scorer, weights = pyprophet._learn_and_apply(tables)
@@ -229,13 +253,29 @@ class Learn(Job):
 
         self.logger.info("write sum_stat_subsampled.txt")
         with open(os.path.join(self.working_folder, "sum_stat_subsampled.txt"), "w") as fp:
-            result.summary_statistics.to_csv(fp, sep=self.SEP, index=False)
+            result.summary_statistics.to_csv(fp, sep=self.separator, index=False)
 
         self.logger.info("write full_stat_subsampled.txt")
         with open(os.path.join(self.working_folder, "full_stat_subsampled.txt"), "w") as fp:
-            result.final_statistics.to_csv(fp, sep=self.SEP, index=False)
+            result.final_statistics.to_csv(fp, sep=self.separator, index=False)
 
         self.logger.info("write weights.txt")
         with open(os.path.join(self.working_folder, "weights.txt"), "w") as fp:
             for w in weights:
                 print(w, file=fp, end=" ")
+
+"""
+infer-scores:
+
+    inkl. job number et al:
+
+    header sollte ok sein wegen vorhergehender schritte !
+
+    header lesen, columsn extrahieren, weights anwende und getrennt nach target und 
+    decoy speichern !
+
+infer-qvalues:
+
+    ergebnisse vom vorherigen schritt sammeln und fdr stat ableiteh
+
+"""

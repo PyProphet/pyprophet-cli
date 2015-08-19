@@ -20,7 +20,12 @@ levels = map(string.lower, "CRITICAL ERROR WARNING INFO DEBUG".split())
 
 for sub_class in Job.__subclasses__():
 
-    def create(sub_class=sub_class):
+    def create_handler(sub_class=sub_class):
+
+        @click.option("--log-level", type=click.Choice(levels), default="debug",
+                      help="[default=debug]")
+        @click.option("--log-file", type=click.File(mode="w"),
+                      help="write logs to given file instead to stderr")
         def handler(log_level, log_file, **options):
             logger = logging.getLogger("pyprophet-brutus")
             logger.setLevel(log_level.upper())
@@ -37,9 +42,10 @@ for sub_class in Job.__subclasses__():
         handler.__doc__ = getattr(sub_class, "__doc__", "")
         return handler
 
-    handler = click.option("--log-level", type=click.Choice(levels), default="debug")(create())
-    handler = click.option("--log-file", type=click.File(mode="w"))(handler)
-    for option in sub_class.options:
+    handler = create_handler()
+    # we set the options in reverse order, so they will appear in the right order
+    # if click printw the help message:
+    for option in sub_class.options[::-1]:
         handler = option(handler)
 
     command_name = sub_class.command_name
