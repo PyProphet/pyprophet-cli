@@ -1,3 +1,4 @@
+# encoding: utf-8
 # vi: et sw=4 ts=4
 
 from __future__ import print_function
@@ -10,11 +11,24 @@ import shutil
 import tempfile
 
 import click
+import numpy as np
 import pandas
 
 from . import tools
 
 from pyprophet.pyprophet import PyProphet
+from pyprophet.optimized import find_top_ranked
+from pyprophet.stats import (calculate_final_statistics, summary_err_table,
+                             lookup_s_and_q_values_from_error_table)
+
+
+join = os.path.join
+basename = os.path.basename
+
+
+def file_name_stem(path):
+    return os.path.splitext(basename(path))[0]
+
 
 Path = click.Path
 option = click.option
@@ -30,15 +44,21 @@ working_folder = option("--working-folder",
                         type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
                         required=True)
 
-run_local = option("--run-local", is_flag=True,
-                   help="pyprophet runs on local machine, not on brutus lsf")
+local_folder = option("--local-folder",
+                   type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
+                   help="local folder on computing node ($TMPDIR for brutus lsf)")
 
 random_seed = option("--random-seed", type=int,
                      help="set a fixed seed for reproducable results")
 
+chunk_size = option("--chunk-size", default=100000,
+                    help="chunk size when reading input files, may impact processing speed "
+                    "[default=100000]",
+                    )
+
 
 def transform_sep(ctx, param, value):
-    return { "tab":"\t", "comma": ",", "semicolon": ";" }.get(value)
+    return {"tab": "\t", "comma": ",", "semicolon": ";"}.get(value)
 
 
 separator = option("--separator", type=click.Choice(("tab", "comma", "semicolon")),
@@ -46,18 +66,20 @@ separator = option("--separator", type=click.Choice(("tab", "comma", "semicolon"
                    callback=transform_sep)
 
 
-
 class InvalidInput(Exception):
     pass
 
 
-"""
-TODO:
-    - sep as commandline flag !?
-"""
+class WorkflowError(Exception):
+    pass
+
+
+WEIGHTS_FILE_NAME = "weights.txt"
+SCORE_DATA_FILE_ENDING = "_score_data.npz"
+SCORED_ENDING = "_scored.txt"
+
 
 class JobMeta(type):
-
 
     def __new__(cls_, name, parents, dd):
         to_check = "requires", "command_name", "options", "run"
@@ -107,6 +129,22 @@ class CheckInputs(Job):
         self.logger.info("header check succeeded")
 
 
+def _setup_input_files(job):
+    if job.local_folder:
+        if not os.path.exists(job.local_folder):
+            raise WorkflowError("%s does not exist" % job.local_folder)
+    job.input_file_pathes = tools.scan_files(job.data_folder)
+    if not job.input_file_pathes:
+        raise WorkflowError("data folder %s is empty" % job.data_folder)
+
+    job._pathes_of_files_for_processing = []
+    for path in job.input_file_pathes:
+        name = basename(path)
+        folder = job.local_folder if job.local_folder else job.data_folder
+        path = join(folder, name)
+        job._pathes_of_files_for_processing.append(path)
+
+
 class Subsample(Job):
 
     """subsamples transition groups from given input files in DATA_FOLDER.
@@ -115,16 +153,11 @@ class Subsample(Job):
 
     requires = None
     command_name = "subsample"
-    options = [job_number, job_count, run_local, separator, data_folder, working_folder,
+    options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
                option("--sample-factor", required=True, type=click.IntRange(1, 100),
                       help="sample factor in percent"),
-               option("--chunk-size", default=100000,
-                      help="chunck size when reading input files, may impact processing speed "
-                           "[default=100000]",
-                      ),
-               option("--local-copy", is_flag=True,
-                      help="copy input files to an eventually faster tempfolder before subsampling"),
                random_seed,
+               chunk_size,
                ]
 
     def run(self):
@@ -134,35 +167,19 @@ class Subsample(Job):
             self._local_job(i)
 
     def _setup(self):
-        if self.run_local:
-            self.tmp_dir = tempfile.mkdtemp()
-        else:
-            self.tmp_dir = os.environ.get("TMPDIR")
-            assert self.tmp_dir is not None, "$TMPDIR not set !!?!"
         if not os.path.exists(self.working_folder):
             os.makedirs(self.working_folder)
-        self.input_file_pathes = tools.scan_files(self.data_folder)
-        if not self.input_file_pathes:
-            raise InvalidInput("data folder %s is empty" % self.data_folder)
-
-        self._pathes_of_files_for_processing = []
-        for path in self.input_file_pathes:
-            name = os.path.basename(path)
-            folder = self.tmp_dir if self.local_copy else self.data_folder
-            path = os.path.join(folder, name)
-            self._pathes_of_files_for_processing.append(path)
-
+        _setup_input_files(self)
 
     def _local_job(self, i):
-        if self.local_copy:
+        if self.local_folder:
             self._copy_to_local(i)
         self._subsample(i)
 
     def _copy_to_local(self, i):
         path = self.input_file_pathes[i]
-        self.logger.info("copy %s to %s" % (path, self.tmp_dir))
-        shutil.copy(path, self.tmp_dir)
-
+        self.logger.info("copy %s to %s" % (path, self.local_folder))
+        shutil.copy(path, self.local_folder)
 
     def _subsample(self, i):
         path = self._pathes_of_files_for_processing[i]
@@ -207,8 +224,8 @@ class Subsample(Job):
         self.logger.info("subsample %d target groups from %s" % (len(sample_ids), path))
 
         # determine name of result file
-        stem = os.path.splitext(os.path.basename(path))[0]
-        out_path = os.path.join(self.working_folder, "subsampled_%s.txt" % stem)
+        stem = file_name_stem(path)
+        out_path = join(self.working_folder, "subsampled_%s.txt" % stem)
         self.logger.info("write to %s" % out_path)
 
         # write result file
@@ -252,30 +269,228 @@ class Learn(Job):
             self.logger.info(line.rstrip())
 
         self.logger.info("write sum_stat_subsampled.txt")
-        with open(os.path.join(self.working_folder, "sum_stat_subsampled.txt"), "w") as fp:
+        with open(join(self.working_folder, "sum_stat_subsampled.txt"), "w") as fp:
             result.summary_statistics.to_csv(fp, sep=self.separator, index=False)
 
         self.logger.info("write full_stat_subsampled.txt")
-        with open(os.path.join(self.working_folder, "full_stat_subsampled.txt"), "w") as fp:
+        with open(join(self.working_folder, "full_stat_subsampled.txt"), "w") as fp:
             result.final_statistics.to_csv(fp, sep=self.separator, index=False)
 
-        self.logger.info("write weights.txt")
-        with open(os.path.join(self.working_folder, "weights.txt"), "w") as fp:
-            for w in weights:
-                print(w, file=fp, end=" ")
+        weights_path = join(self.working_folder, WEIGHTS_FILE_NAME)
+        self.logger.info("write {}".format(weights_path))
+        np.savetxt(weights_path, weights)
+
+
+class ApplyWeights(Job):
+
+    """applies weights to given data files and writes them to WORKING_FOLDER
+    """
+
+    requires = Learn
+    command_name = "apply_weights"
+    options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
+               chunk_size]
+
+    def run(self):
+        """run processing step from commandline"""
+        self._setup()
+        for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
+            self._local_job(i)
+
+    def _setup(self):
+        _setup_input_files(self)
+        self._load_weights()
+
+    def _load_weights(self):
+        weights_path = join(self.working_folder, WEIGHTS_FILE_NAME)
+        if not os.path.exists(weights_path):
+            raise WorkflowError("did not find file %s, maybe one of the previous steps of the "
+                                "pyprophet workflow is broken" % weights_path)
+        try:
+            self.weights = np.loadtxt(weights_path)
+        except ValueError:
+            raise WorkflowError("weights file %s is not valid" % weights_path)
+
+    def _local_job(self, i):
+        if self.local_folder:
+            self._copy_to_local(i)
+        self._score(i)
+
+    def _copy_to_local(self, i):
+        path = self.input_file_pathes[i]
+        self.logger.info("copy %s to %s" % (path, self.local_folder))
+        shutil.copy(path, self.local_folder)
+
+    def _score(self, i):
+        path = self._pathes_of_files_for_processing[i]
+
+        self.logger.info("start scoring %s" % path)
+
+        all_scores = []
+        score_column_indices = None
+        tg_ids = []
+        for chunk in pandas.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+            if score_column_indices is None:
+                score_column_indices = []
+                for (i, name) in enumerate(chunk.columns):
+                    if name.startswith("main_") or name.startswith("var_"):
+                        score_column_indices.append(i)
+
+            tg_ids.extend(chunk[self.ID_COL])
+            chunk = chunk.iloc[:, score_column_indices]
+            scores = chunk.dot(self.weights)
+            all_scores.append(scores)
+
+        # we map the string representations to numerical ids, decoys have id -1,
+        # targets and id > 0
+        # we need in next step: top_target_scores, all_decoy_scores and all_target_scores
+        decoy_tg_to_id = dict((id_, -1) for id_ in tg_ids if id_.startswith("DECOY_"))
+
+        target_ids = [id_ for id_ in tg_ids if not id_.startswith("DECOY_")]
+        tg_to_id = dict((id_, i) for (i, id_) in enumerate(set(target_ids)))
+        tg_to_id.update(decoy_tg_to_id)
+        numeric_ids = [tg_to_id.get(id_) for id_ in tg_ids]
+
+        stem = file_name_stem(path)
+        out_path = join(self.working_folder, stem + SCORE_DATA_FILE_ENDING)
+        np.savez(out_path, tg_ids=numeric_ids, scores=np.hstack(all_scores))
+        self.logger.info("wrote %s" % out_path)
+
+
+class Score(Job):
+
+    """applies weights to given data files and writes them to WORKING_FOLDER
+    """
+
+    requires = ApplyWeights
+    command_name = "score"
+    options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
+               chunk_size]
+
+    def run(self):
+        """run processing step from commandline"""
+        self._setup()
+        for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
+            self._local_job(i)
+
+    def _setup(self):
+        _setup_input_files(self)
+        self._load_score_data()
+        self._create_global_stats()
+
+    def _load_score_data(self):
+        all_scores = []
+        all_ids = []
+        last_max = 0
+        for name in os.listdir(self.working_folder):
+            if name.endswith(SCORE_DATA_FILE_ENDING):
+                path = join(self.working_folder, name)
+                npzfile = np.load(path)
+
+                ids = npzfile["tg_ids"]
+                ids[ids >= 0] += last_max
+                last_max = np.max(ids)
+                all_ids.append(ids)
+
+                scores = npzfile["scores"]
+                all_scores.append(scores)
+
+        if not all_scores:
+            raise WorkflowError("no score matrices found in %s" % self.working_folder)
+
+        self.scores = np.hstack(all_scores)
+        self.ids = np.hstack(all_ids)
+
+    def _create_global_stats(self):
+
+        decoy_scores = self.scores[self.ids == -1]
+
+        mean = np.mean(decoy_scores)
+        std_dev = np.std(decoy_scores, ddof=1)
+
+        self.decoy_mean = mean
+        self.decoy_std = std_dev
+
+        decoy_scores = (decoy_scores - mean) / std_dev
+
+        target_ids = (self.ids >= 0)
+        target_scores = self.scores[target_ids]
+        target_scores = (target_scores - mean) / std_dev
+
+        target_ids = self.ids[target_ids]
+
+        flags = find_top_ranked(target_ids, target_scores).astype(bool)
+        top_target_scores = target_scores[flags]
+
+        self.stats = calculate_final_statistics(top_target_scores, target_scores, decoy_scores, 0.4)
+
+        summary_stats = summary_err_table(self.stats.df)
+        self.logger.info("overall stat")
+        for line in str(summary_stats).split("\n"):
+            self.logger.info(line.rstrip())
+
+    def _local_job(self, i):
+        if self.local_folder:
+            self._copy_to_local(i)
+        self._score(i)
+
+    def _copy_to_local(self, i):
+        path = self.input_file_pathes[i]
+        self.logger.info("copy %s to %s" % (path, self.local_folder))
+        shutil.copy(path, self.local_folder)
+
+    def _score(self, i):
+        in_path = self._pathes_of_files_for_processing[i]
+
+        score_path = join(self.working_folder, file_name_stem(in_path) + SCORE_DATA_FILE_ENDING)
+        if not os.path.exists(score_path):
+            raise WorkflowError("file %s does not exist" % score_path)
+
+        self.logger.info("load scores %s" % score_path)
+        npzfile = np.load(score_path)
+        scores = npzfile["scores"]
+        scores = (scores - self.decoy_mean) / self.decoy_std
+
+
+        row_idx = 0
+        score_names = None
+
+        out_path = join(self.working_folder, file_name_stem(in_path) + SCORED_ENDING)
+
+        self.logger.info("process %s" % in_path)
+        write_header = True
+        with open(out_path, "w") as fp:
+
+            for chunk in pandas.read_csv(in_path, sep=self.separator, chunksize=self.chunk_size):
+
+                if score_names is None:
+                    score_names = []
+                    for name in chunk.columns:
+                        if name.startswith("main_") or name.startswith("var_"):
+                            score_names.append(name)
+
+                chunk.drop(score_names, axis=1, inplace=True)
+                nrows = chunk.shape[0]
+
+                # we have  to build a data frame because lookup_s_and_q_values_from_error_table
+                # functions expectes this:
+                d_scores = scores[row_idx: row_idx + nrows]
+                chunk_scores = pandas.DataFrame(dict(scores=d_scores))
+                row_idx += nrows
+                s, q = lookup_s_and_q_values_from_error_table(chunk_scores["scores"], self.stats.df)
+                chunk["d_score"] = d_scores
+                chunk["m_score"] = q
+                chunk["s_value"] = s
+
+                chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
+                write_header = False
+
+        self.logger.info("wrote %s" % out_path)
 
 """
-infer-scores:
 
-    inkl. job number et al:
-
-    header sollte ok sein wegen vorhergehender schritte !
-
-    header lesen, columsn extrahieren, weights anwende und getrennt nach target und 
-    decoy speichern !
-
-infer-qvalues:
-
-    ergebnisse vom vorherigen schritt sammeln und fdr stat ableiteh
+TODO:
+    $TMPDIR aus code raus und argument --tmp-folder oder ähnlniches einführen, dann
+    ist das ganze lsf unabhängig und das taucht nur noch im finalen skript auf !
 
 """

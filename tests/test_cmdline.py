@@ -38,7 +38,7 @@ def test_check(setup):
 
 
 def test_subsample(setup):
-    cmd = ("pyprophet-brutus subsample --run-local --job-number 1 --job-count 1 "
+    cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 1 "
            "--sample-factor 10 "
            "--random-seed 43 "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
@@ -50,10 +50,11 @@ def test_subsample(setup):
     subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[0]), sep="\t")
     assert subsamples.shape == (934, 20)
 
-    cmd = ("pyprophet-brutus subsample --run-local --job-number 1 --job-count 2 "
+    cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
            "--sample-factor 10 "
            "--random-seed 43 "
-           "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
+           "--data-folder %s --working-folder %s "
+           "--local-folder %s") % (setup.data_folder, setup.working_folder, tempfile.mkdtemp())
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.working_folder)
@@ -62,7 +63,7 @@ def test_subsample(setup):
     subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[0]), sep="\t")
     assert subsamples.shape == (934, 20)
 
-    cmd = ("pyprophet-brutus subsample --local-copy --job-number 1 --job-count 2 "
+    cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
            "--sample-factor 10 "
            "--random-seed 43 "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
@@ -88,3 +89,10 @@ def test_learn(setup, regtest):
 
     for name in ("weights.txt", "sum_stat_subsampled.txt"):
         print(open(os.path.join(setup.working_folder, name), "r").read(), file=regtest)
+
+
+def test_score(setup, regtest):
+    cmd = ("pyprophet-brutus apply_weights --job-number 1 --job-count 1 "
+           "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
+    ret_code = subprocess.call(cmd, shell=True)
+    assert ret_code == 0
