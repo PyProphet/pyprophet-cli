@@ -365,7 +365,9 @@ class Score(Job):
     requires = ApplyWeights
     command_name = "score"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
-               chunk_size]
+               chunk_size,
+               option("--lambda", "lambda_", default=0.4,
+                   help="lambda value for storeys method [default=0.4]")]
 
     def run(self):
         """run processing step from commandline"""
@@ -422,7 +424,8 @@ class Score(Job):
         flags = find_top_ranked(target_ids, target_scores).astype(bool)
         top_target_scores = target_scores[flags]
 
-        self.stats = calculate_final_statistics(top_target_scores, target_scores, decoy_scores, 0.4)
+        self.stats = calculate_final_statistics(top_target_scores, target_scores, decoy_scores,
+                                                self.lambda_)
 
         summary_stats = summary_err_table(self.stats.df)
         self.logger.info("overall stat")
