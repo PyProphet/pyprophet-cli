@@ -56,6 +56,9 @@ chunk_size = option("--chunk-size", default=100000,
                     "[default=100000]",
                     )
 
+data_filename_pattern = option("--data-filename-pattern", default = "*.txt",
+                               help="glob pattern to filter files in data folder")
+
 
 def transform_sep(ctx, param, value):
     return {"tab": "\t", "comma": ",", "semicolon": ";"}.get(value)
@@ -106,13 +109,13 @@ class CheckInputs(Job):
 
     requires = None
     command_name = "check"
-    options = [data_folder, separator]
+    options = [data_folder, separator, data_filename_pattern]
 
     def run(self):
         self._check_headers()
 
     def _check_headers(self):
-        input_file_pathes = tools.scan_files(self.data_folder)
+        input_file_pathes = tools.scan_files(self.data_folder, self.data_filename_pattern)
         headers = set()
         for path in input_file_pathes:
             header = pandas.read_csv(path, sep=self.separator, nrows=1).columns
@@ -129,11 +132,11 @@ class CheckInputs(Job):
         self.logger.info("header check succeeded")
 
 
-def _setup_input_files(job):
+def _setup_input_files(job, data_filename_pattern):
     if job.local_folder:
         if not os.path.exists(job.local_folder):
             raise WorkflowError("%s does not exist" % job.local_folder)
-    job.input_file_pathes = tools.scan_files(job.data_folder)
+    job.input_file_pathes = tools.scan_files(job.data_folder, data_filename_pattern)
     if not job.input_file_pathes:
         raise WorkflowError("data folder %s is empty" % job.data_folder)
 
@@ -158,6 +161,7 @@ class Subsample(Job):
                       help="sample factor in percent"),
                random_seed,
                chunk_size,
+               data_filename_pattern,
                ]
 
     def run(self):
@@ -169,7 +173,7 @@ class Subsample(Job):
     def _setup(self):
         if not os.path.exists(self.working_folder):
             os.makedirs(self.working_folder)
-        _setup_input_files(self)
+        _setup_input_files(self, self.data_filename_pattern)
 
     def _local_job(self, i):
         if self.local_folder:
@@ -248,14 +252,14 @@ class Learn(Job):
 
     requires = Subsample
     command_name = "learn"
-    options = [working_folder, separator, random_seed]
+    options = [working_folder, separator, random_seed, data_filename_pattern,]
 
     def run(self):
         if self.random_seed:
             self.logger.info("set random seed to %r" % self.random_seed)
             random.seed(self.random_seed)
 
-        pathes = tools.scan_files(self.working_folder, filter_by=".txt")
+        pathes = tools.scan_files(self.working_folder)
         pyprophet = PyProphet()
 
         self.logger.info("read subsampled files from %s" % self.working_folder)
@@ -289,7 +293,7 @@ class ApplyWeights(Job):
     requires = Learn
     command_name = "apply_weights"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
-               chunk_size]
+               chunk_size, data_filename_pattern]
 
     def run(self):
         """run processing step from commandline"""
@@ -298,7 +302,7 @@ class ApplyWeights(Job):
             self._local_job(i)
 
     def _setup(self):
-        _setup_input_files(self)
+        _setup_input_files(self, self.data_filename_pattern)
         self._load_weights()
 
     def _load_weights(self):
@@ -366,6 +370,7 @@ class Score(Job):
     command_name = "score"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
                chunk_size,
+               data_filename_pattern,
                option("--lambda", "lambda_", default=0.4,
                    help="lambda value for storeys method [default=0.4]")]
 
@@ -376,7 +381,7 @@ class Score(Job):
             self._local_job(i)
 
     def _setup(self):
-        _setup_input_files(self)
+        _setup_input_files(self, self.data_filename_pattern)
         self._load_score_data()
         self._create_global_stats()
 

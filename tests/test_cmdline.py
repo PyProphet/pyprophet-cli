@@ -41,6 +41,7 @@ def test_subsample(setup):
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 1 "
            "--sample-factor 10 "
            "--random-seed 43 "
+           "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
@@ -53,6 +54,7 @@ def test_subsample(setup):
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
            "--sample-factor 10 "
            "--random-seed 43 "
+           "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s "
            "--local-folder %s") % (setup.data_folder, setup.working_folder, tempfile.mkdtemp())
     ret_code = subprocess.call(cmd, shell=True)
@@ -66,6 +68,7 @@ def test_subsample(setup):
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
            "--sample-factor 10 "
            "--random-seed 43 "
+           "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
@@ -93,6 +96,7 @@ def test_learn(setup, regtest):
 
 def test_score(setup, regtest):
     cmd = ("pyprophet-brutus apply_weights --job-number 1 --job-count 1 "
+           "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
