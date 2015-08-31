@@ -124,6 +124,8 @@ class CheckInputs(Job):
                 raise InvalidInput("first column of %s has wrong name %r. exepected %r" %
                                    (path, header[0], expected))
             headers.add(tuple(header))
+        if not headers:
+            raise InvalidInput("dit not find any data file")
         if len(headers) > 1:
             msg = []
             for header in headers:
