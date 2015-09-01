@@ -159,8 +159,8 @@ class Subsample(Job):
     requires = None
     command_name = "subsample"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
-               option("--sample-factor", required=True, type=click.IntRange(1, 100),
-                      help="sample factor in percent"),
+               option("--sample-factor", required=True, type=float,
+                      help="sample factor in range 0.0 < factor <= 1.0"),
                random_seed,
                chunk_size,
                data_filename_pattern,
@@ -168,6 +168,8 @@ class Subsample(Job):
 
     def run(self):
         """run processing step from commandline"""
+        if not 0.0 < self.sample_factor <= 1.0:
+            raise InvalidInput("sample factor %r is out of range 0.0 < sample_factor <= 1.0")
         self._setup()
         for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
             self._local_job(i)
@@ -213,7 +215,7 @@ class Subsample(Job):
 
         # now we iterate over the ids until the size limit for the result file is achieved:
         consumed_lines = 0
-        total_lines_output = overall_line_count * self.sample_factor / 100.0
+        total_lines_output = overall_line_count * self.sample_factor
         sample_targets = []
         for (i, id_) in enumerate(valid_targets):
             if consumed_lines > total_lines_output:
@@ -254,7 +256,7 @@ class Learn(Job):
 
     requires = Subsample
     command_name = "learn"
-    options = [working_folder, separator, random_seed, data_filename_pattern,]
+    options = [working_folder, separator, random_seed]
 
     def run(self):
         if self.random_seed:
