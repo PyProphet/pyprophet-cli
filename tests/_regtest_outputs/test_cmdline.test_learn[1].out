@@ -1,7 +1,8 @@
 0    5547 full_stat_subsampled.txt
-1  206624 subsampled_data_0.txt
-2     750 sum_stat_subsampled.txt
-3     433 weights.txt
+1      13 invalid_columns.tst
+2  207571 subsampled_data_0.txt
+3     750 sum_stat_subsampled.txt
+4     433 weights.txt
 5.629800465226143524e-01
 -1.522083926137901208e-02
 -4.331212315161456772e+00

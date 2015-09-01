@@ -41,42 +41,45 @@ def test_subsample(setup):
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 1 "
            "--sample-factor 10 "
            "--random-seed 43 "
+           "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.working_folder)
-    assert len(files) == setup.number_input_files
+    assert len(files) == setup.number_input_files + 1
 
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[0]), sep="\t")
-    assert subsamples.shape == (934, 20)
+    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[1]), sep="\t")
+    assert subsamples.shape == (934, 21)
 
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
            "--sample-factor 10 "
            "--random-seed 43 "
+           "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s "
            "--local-folder %s") % (setup.data_folder, setup.working_folder, tempfile.mkdtemp())
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.working_folder)
-    assert len(files) == 1 if setup.number_input_files == 1 else 2
+    assert len(files) == 2 if setup.number_input_files == 1 else 3
 
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[0]), sep="\t")
-    assert subsamples.shape == (934, 20)
+    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[1]), sep="\t")
+    assert subsamples.shape == (934, 21)
 
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
            "--sample-factor 10 "
            "--random-seed 43 "
+           "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.working_folder)
-    assert len(files) == 1 if setup.number_input_files == 1 else 2
+    assert len(files) == 2 if setup.number_input_files == 1 else 3
 
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[0]), sep="\t")
-    assert subsamples.shape == (934, 20)
+    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[1]), sep="\t")
+    assert subsamples.shape == (934, 21)
 
 
 def test_learn(setup, regtest):

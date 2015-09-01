@@ -12,7 +12,7 @@ import tempfile
 
 import click
 import numpy as np
-import pandas
+import pandas as pd
 
 from . import tools
 
@@ -59,6 +59,9 @@ chunk_size = option("--chunk-size", default=100000,
 data_filename_pattern = option("--data-filename-pattern", default = "*.txt",
                                help="glob pattern to filter files in data folder")
 
+ignore_invalid_scores = option("--ignore-invalid-scores", is_flag=True,
+                               help="ignore columns where all values are invalid/missing")
+
 
 def transform_sep(ctx, param, value):
     return {"tab": "\t", "comma": ",", "semicolon": ";"}.get(value)
@@ -80,13 +83,14 @@ class WorkflowError(Exception):
 WEIGHTS_FILE_NAME = "weights.txt"
 SCORE_DATA_FILE_ENDING = "_score_data.npz"
 SCORED_ENDING = "_scored.txt"
+INVALID_COLUMNS_FILE = "invalid_columns.tst"
+SUBSAMPLED_FILES_PATTERN = "subsampled_%s.txt"
 
 
 class JobMeta(type):
 
     def __new__(cls_, name, parents, dd):
         to_check = "requires", "command_name", "options", "run"
-        # print(cls_, name, parents, dd.keys())
         if object not in parents:
             if any(field not in dd for field in to_check):
                 raise TypeError("needed attributes/methods: %s" % ", ".join(to_check))
@@ -95,7 +99,6 @@ class JobMeta(type):
 
 class Job(object):
 
-    SEP = "\t"
     ID_COL = "transition_group_id"
 
     __metaclass__ = JobMeta
@@ -118,7 +121,7 @@ class CheckInputs(Job):
         input_file_pathes = tools.scan_files(self.data_folder, self.data_filename_pattern)
         headers = set()
         for path in input_file_pathes:
-            header = pandas.read_csv(path, sep=self.separator, nrows=1).columns
+            header = pd.read_csv(path, sep=self.separator, nrows=1).columns
             expected = self.ID_COL
             if header[0] != expected:
                 raise InvalidInput("first column of %s has wrong name %r. exepected %r" %
@@ -148,6 +151,12 @@ def _setup_input_files(job, data_filename_pattern):
         job._pathes_of_files_for_processing.append(path)
 
 
+def _read_invalid_colums(working_folder):
+    with open(os.path.join(working_folder, INVALID_COLUMNS_FILE), "r") as fp:
+        for line in fp:
+            yield line.rstrip()
+
+
 class Subsample(Job):
 
     """subsamples transition groups from given input files in DATA_FOLDER.
@@ -162,6 +171,7 @@ class Subsample(Job):
                random_seed,
                chunk_size,
                data_filename_pattern,
+               ignore_invalid_scores,
                ]
 
     def run(self):
@@ -192,9 +202,22 @@ class Subsample(Job):
 
         ids = []
         overall_line_count = 0
-        for chunk in pandas.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+        all_invalid = {}
+        for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
             ids.extend(chunk[self.ID_COL])
             overall_line_count += len(chunk)
+            for name in chunk.columns:
+                col_data = chunk[name]
+                all_invalid[name] = all_invalid.get(name) or pd.isnull(col_data).all()
+
+        invalid_colums = [name for (name, invalid) in all_invalid.items() if invalid]
+        if not self.ignore_invalid_scores and invalid_colums:
+            msg = ", ".join(invalid_colums)
+            raise WorkflowError("columns %s only contain invalid/missing values" % msg)
+
+        with open(os.path.join(self.working_folder, INVALID_COLUMNS_FILE), "w") as fp:
+            for name in invalid_colums:
+                print(name, file=fp)
 
         line_counts = collections.Counter(ids)
 
@@ -229,14 +252,14 @@ class Subsample(Job):
 
         # determine name of result file
         stem = file_name_stem(path)
-        out_path = join(self.working_folder, "subsampled_%s.txt" % stem)
+        out_path = join(self.working_folder, SUBSAMPLED_FILES_PATTERN % stem)
         self.logger.info("write to %s" % out_path)
 
         # write result file
         with open(out_path, "w") as fp:
 
             write_header = True
-            for chunk in pandas.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+            for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
                 chunk = chunk[chunk[self.ID_COL].isin(sample_ids)]
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
                 write_header = False
@@ -252,20 +275,24 @@ class Learn(Job):
 
     requires = Subsample
     command_name = "learn"
-    options = [working_folder, separator, random_seed, data_filename_pattern,]
+    options = [working_folder, separator, random_seed, data_filename_pattern]
 
     def run(self):
         if self.random_seed:
             self.logger.info("set random seed to %r" % self.random_seed)
             random.seed(self.random_seed)
 
-        pathes = tools.scan_files(self.working_folder)
+        pathes = tools.scan_files(self.working_folder, SUBSAMPLED_FILES_PATTERN % "*")
         pyprophet = PyProphet()
 
         self.logger.info("read subsampled files from %s" % self.working_folder)
         for path in pathes:
             self.logger.info("    read %s" % path)
         tables = list(pyprophet.read_tables_iter(pathes, self.separator))
+
+        invalid_columns = list(_read_invalid_colums(self.working_folder))
+        for table in tables:
+            table.drop(invalid_columns, axis=1, inplace=True)
 
         self.logger.info("run pyprophet core algorithm")
         result, scorer, weights = pyprophet._learn_and_apply(tables)
@@ -333,10 +360,13 @@ class ApplyWeights(Job):
         all_scores = []
         score_column_indices = None
         tg_ids = []
-        for chunk in pandas.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+        invalid_columns = list(_read_invalid_colums(self.working_folder))
+        for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
             if score_column_indices is None:
                 score_column_indices = []
                 for (i, name) in enumerate(chunk.columns):
+                    if name in invalid_columns:
+                        continue
                     if name.startswith("main_") or name.startswith("var_"):
                         score_column_indices.append(i)
 
@@ -459,7 +489,6 @@ class Score(Job):
         scores = npzfile["scores"]
         scores = (scores - self.decoy_mean) / self.decoy_std
 
-
         row_idx = 0
         score_names = None
 
@@ -469,7 +498,7 @@ class Score(Job):
         write_header = True
         with open(out_path, "w") as fp:
 
-            for chunk in pandas.read_csv(in_path, sep=self.separator, chunksize=self.chunk_size):
+            for chunk in pd.read_csv(in_path, sep=self.separator, chunksize=self.chunk_size):
 
                 if score_names is None:
                     score_names = []
@@ -483,7 +512,7 @@ class Score(Job):
                 # we have  to build a data frame because lookup_s_and_q_values_from_error_table
                 # functions expectes this:
                 d_scores = scores[row_idx: row_idx + nrows]
-                chunk_scores = pandas.DataFrame(dict(scores=d_scores))
+                chunk_scores = pd.DataFrame(dict(scores=d_scores))
                 row_idx += nrows
                 s, q = lookup_s_and_q_values_from_error_table(chunk_scores["scores"], self.stats.df)
                 chunk["d_score"] = d_scores
@@ -494,11 +523,3 @@ class Score(Job):
                 write_header = False
 
         self.logger.info("wrote %s" % out_path)
-
-"""
-
-TODO:
-    $TMPDIR aus code raus und argument --tmp-folder oder ähnlniches einführen, dann
-    ist das ganze lsf unabhängig und das taucht nur noch im finalen skript auf !
-
-"""
