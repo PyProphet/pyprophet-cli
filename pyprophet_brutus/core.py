@@ -10,6 +10,8 @@ import random
 import shutil
 import tempfile
 
+import pkg_resources
+
 import click
 import numpy as np
 import pandas as pd
@@ -45,8 +47,8 @@ working_folder = option("--working-folder",
                         required=True)
 
 local_folder = option("--local-folder",
-                   type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
-                   help="local folder on computing node ($TMPDIR for brutus lsf)")
+                      type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
+                      help="local folder on computing node ($TMPDIR for brutus lsf)")
 
 random_seed = option("--random-seed", type=int,
                      help="set a fixed seed for reproducable results")
@@ -56,7 +58,7 @@ chunk_size = option("--chunk-size", default=100000,
                     "[default=100000]",
                     )
 
-data_filename_pattern = option("--data-filename-pattern", default = "*.txt",
+data_filename_pattern = option("--data-filename-pattern", default="*.txt",
                                help="glob pattern to filter files in data folder")
 
 ignore_invalid_scores = option("--ignore-invalid-scores", is_flag=True,
@@ -70,6 +72,9 @@ def transform_sep(ctx, param, value):
 separator = option("--separator", type=click.Choice(("tab", "comma", "semicolon")),
                    default="tab", help="separator for input and output files [default=tab]",
                    callback=transform_sep)
+
+sample_factor = option("--sample-factor", required=True, type=float,
+                       help="sample factor in range 0.0 .. 1.0")
 
 
 class InvalidInput(Exception):
@@ -90,7 +95,7 @@ SUBSAMPLED_FILES_PATTERN = "subsampled_%s.txt"
 class JobMeta(type):
 
     def __new__(cls_, name, parents, dd):
-        to_check = "requires", "command_name", "options", "run"
+        to_check = "command_name", "options", "run"
         if object not in parents:
             if any(field not in dd for field in to_check):
                 raise TypeError("needed attributes/methods: %s" % ", ".join(to_check))
@@ -110,7 +115,6 @@ class CheckInputs(Job):
     if the column names are consistent.
     """
 
-    requires = None
     command_name = "check"
     options = [data_folder, separator, data_filename_pattern]
 
@@ -163,13 +167,11 @@ class Subsample(Job):
     For following procession steps the data is written to the provided WORKING_FOLDER.
     """
 
-    requires = None
     command_name = "subsample"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
-               option("--sample-factor", required=True, type=click.IntRange(1, 100),
-                      help="sample factor in percent"),
                random_seed,
                chunk_size,
+               sample_factor,
                data_filename_pattern,
                ignore_invalid_scores,
                ]
@@ -273,7 +275,6 @@ class Learn(Job):
     writes weights files in this folder.
     """
 
-    requires = Subsample
     command_name = "learn"
     options = [working_folder, separator, random_seed, data_filename_pattern]
 
@@ -317,7 +318,6 @@ class ApplyWeights(Job):
     """applies weights to given data files and writes them to WORKING_FOLDER
     """
 
-    requires = Learn
     command_name = "apply_weights"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
                chunk_size, data_filename_pattern]
@@ -396,13 +396,12 @@ class Score(Job):
     """applies weights to given data files and writes them to WORKING_FOLDER
     """
 
-    requires = ApplyWeights
     command_name = "score"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
                chunk_size,
                data_filename_pattern,
                option("--lambda", "lambda_", default=0.4,
-                   help="lambda value for storeys method [default=0.4]")]
+                      help="lambda value for storeys method [default=0.4]")]
 
     def run(self):
         """run processing step from commandline"""
@@ -523,3 +522,38 @@ class Score(Job):
                 write_header = False
 
         self.logger.info("wrote %s" % out_path)
+
+
+def _load_drivers():
+
+    for ep in pkg_resources.iter_entry_points("pyprophet_brutus_driver", name="config"):
+        try:
+            driver = ep.load()
+        except Exception:
+            raise
+            raise WorkflowError("driver %s can not be loaded" % ep)
+        try:
+            name, options, run, help_ = driver()
+        except Exception:
+            raise
+            raise WorkflowError("driver %s can not be loaded" % ep)
+        yield _create_run_job(name, options, run, help_)
+
+
+def _create_run_job(name, options, job_function, help_):
+
+    class _RunWorkflow(Job):
+        options = command_name = None
+
+        def run(self):
+            job_function(self)
+
+    _RunWorkflow.options = options
+    _RunWorkflow.command_name = name
+    _RunWorkflow.__doc__ = help_
+    _RunWorkflow.run = job_function
+
+    return _RunWorkflow
+
+for driver in _load_drivers():
+    pass

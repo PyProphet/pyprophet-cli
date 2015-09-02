@@ -35,6 +35,9 @@ for sub_class in Job.__subclasses__():
             logger.addHandler(h)
             options["logger"] = logger
 
+            for name, value in options.items():
+                logger.info("got %s = %r" % (name, value))
+
             inst = sub_class()
             # set instance attributes according to command line options:
             inst.__dict__.update(options)
