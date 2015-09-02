@@ -88,7 +88,7 @@ class WorkflowError(Exception):
 WEIGHTS_FILE_NAME = "weights.txt"
 SCORE_DATA_FILE_ENDING = "_score_data.npz"
 SCORED_ENDING = "_scored.txt"
-INVALID_COLUMNS_FILE = "invalid_columns.tst"
+INVALID_COLUMNS_FILE = "invalid_columns.txt"
 SUBSAMPLED_FILES_PATTERN = "subsampled_%s.txt"
 
 
@@ -131,6 +131,8 @@ class CheckInputs(Job):
                 raise InvalidInput("first column of %s has wrong name %r. exepected %r" %
                                    (path, header[0], expected))
             headers.add(tuple(header))
+        if not headers:
+            raise InvalidInput("dit not find any data file")
         if len(headers) > 1:
             msg = []
             for header in headers:
@@ -178,6 +180,12 @@ class Subsample(Job):
 
     def run(self):
         """run processing step from commandline"""
+        try:
+            self.sample_factor = float(self.sample_factor)
+        except ValueError:
+            raise InvalidInput("sample factor is not a valid float")
+        if not 0.0 < self.sample_factor <= 1.0:
+            raise InvalidInput("sample factor %r is out of range 0.0 < sample_factor <= 1.0")
         self._setup()
         for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
             self._local_job(i)
@@ -236,7 +244,7 @@ class Subsample(Job):
 
         # now we iterate over the ids until the size limit for the result file is achieved:
         consumed_lines = 0
-        total_lines_output = overall_line_count * self.sample_factor / 100.0
+        total_lines_output = overall_line_count * self.sample_factor
         sample_targets = []
         for (i, id_) in enumerate(valid_targets):
             if consumed_lines > total_lines_output:
@@ -276,7 +284,7 @@ class Learn(Job):
     """
 
     command_name = "learn"
-    options = [working_folder, separator, random_seed, data_filename_pattern]
+    options = [working_folder, separator, random_seed]
 
     def run(self):
         if self.random_seed:

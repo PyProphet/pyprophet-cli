@@ -10,6 +10,9 @@ import tempfile
 
 import pandas
 
+pandas.options.display.precision=6
+pandas.options.display.width=200
+
 
 @pytest.fixture(scope="session")
 def test_data_folder():
@@ -39,7 +42,7 @@ def test_check(setup):
 
 def test_subsample(setup):
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 1 "
-           "--sample-factor 10 "
+           "--sample-factor 0.1 "
            "--random-seed 43 "
            "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
@@ -49,11 +52,12 @@ def test_subsample(setup):
     files = os.listdir(setup.working_folder)
     assert len(files) == setup.number_input_files + 1
 
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[1]), sep="\t")
+    files.sort()
+    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
-           "--sample-factor 10 "
+           "--sample-factor 0.1 "
            "--random-seed 43 "
            "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
@@ -64,11 +68,12 @@ def test_subsample(setup):
     files = os.listdir(setup.working_folder)
     assert len(files) == 2 if setup.number_input_files == 1 else 3
 
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[1]), sep="\t")
+    files.sort()
+    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
     cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
-           "--sample-factor 10 "
+           "--sample-factor 0.1 "
            "--random-seed 43 "
            "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
@@ -78,7 +83,9 @@ def test_subsample(setup):
     files = os.listdir(setup.working_folder)
     assert len(files) == 2 if setup.number_input_files == 1 else 3
 
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[1]), sep="\t")
+    files.sort()
+
+    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
 
@@ -94,7 +101,9 @@ def test_learn(setup, regtest):
         print(i, "%7d" % os.stat(path).st_size, file_, file=regtest)
 
     for name in ("weights.txt", "sum_stat_subsampled.txt"):
-        print(open(os.path.join(setup.working_folder, name), "r").read(), file=regtest)
+        df = pandas.read_csv(os.path.join(setup.working_folder, name), header=None, sep="\t")
+        print(df, file=regtest)
+        # print(open(os.path.join(setup.working_folder, name), "r").read(), file=regtest)
 
 
 def test_score(setup, regtest):
