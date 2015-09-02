@@ -408,6 +408,7 @@ class Score(Job):
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
                chunk_size,
                data_filename_pattern,
+               option("--overwrite-results", is_flag=True),
                option("--lambda", "lambda_", default=0.4,
                       help="lambda value for storeys method [default=0.4]")]
 
@@ -499,7 +500,15 @@ class Score(Job):
         row_idx = 0
         score_names = None
 
-        out_path = join(self.working_folder, file_name_stem(in_path) + SCORED_ENDING)
+        result_folder = os.path.join(self.working_folder, "results")
+        if not self.overwrite_results and os.path.exists(result_folder):
+            if os.listdir(result_folder):
+                raise WorkflowError("result folder is not empty, you may use --overwrite-results")
+
+        if not os.path.exists(result_folder):
+            os.makedirs(result_folder)
+
+        out_path = join(result_folder, file_name_stem(in_path) + SCORED_ENDING)
 
         self.logger.info("process %s" % in_path)
         write_header = True

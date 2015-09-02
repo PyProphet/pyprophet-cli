@@ -35,13 +35,13 @@ def setup(test_data_folder, request):
 
 
 def test_check(setup):
-    cmd = ("pyprophet-brutus check --data-folder %s" % setup.data_folder)
+    cmd = ("pyprophet-cli check --data-folder %s" % setup.data_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
 
 
 def test_subsample(setup):
-    cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 1 "
+    cmd = ("pyprophet-cli subsample --job-number 1 --job-count 1 "
            "--sample-factor 0.1 "
            "--random-seed 43 "
            "--ignore-invalid-scores "
@@ -56,7 +56,7 @@ def test_subsample(setup):
     subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
-    cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
+    cmd = ("pyprophet-cli subsample --job-number 1 --job-count 2 "
            "--sample-factor 0.1 "
            "--random-seed 43 "
            "--ignore-invalid-scores "
@@ -72,7 +72,7 @@ def test_subsample(setup):
     subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
-    cmd = ("pyprophet-brutus subsample --job-number 1 --job-count 2 "
+    cmd = ("pyprophet-cli subsample --job-number 1 --job-count 2 "
            "--sample-factor 0.1 "
            "--random-seed 43 "
            "--ignore-invalid-scores "
@@ -90,7 +90,7 @@ def test_subsample(setup):
 
 
 def test_learn(setup, regtest):
-    cmd = ("pyprophet-brutus learn --random-seed 43 --working-folder %s" % setup.working_folder)
+    cmd = ("pyprophet-cli learn --random-seed 43 --working-folder %s" % setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
 
@@ -106,8 +106,8 @@ def test_learn(setup, regtest):
         # print(open(os.path.join(setup.working_folder, name), "r").read(), file=regtest)
 
 
-def test_score(setup, regtest):
-    cmd = ("pyprophet-brutus apply_weights --job-number 1 --job-count 1 "
+def test_apply_weights(setup, regtest):
+    cmd = ("pyprophet-cli apply_weights --job-number 1 --job-count 1 "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
