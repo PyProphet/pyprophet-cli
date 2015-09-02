@@ -27,7 +27,7 @@ for sub_class in Job.__subclasses__():
         @click.option("--log-file", type=click.File(mode="w"),
                       help="write logs to given file instead to stderr")
         def handler(log_level, log_file, **options):
-            logger = logging.getLogger("pyprophet-brutus")
+            logger = logging.getLogger("pyprophet-jobs")
             logger.setLevel(log_level.upper())
             h = logging.StreamHandler(stream=log_file)
             fmt = "%(levelname)-8s -- [pid=%(process)5d] : %(asctime)s: %(message)s"

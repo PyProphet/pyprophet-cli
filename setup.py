@@ -4,7 +4,7 @@ from distutils.extension import Extension
 
 version = (0, 0, 1)
 
-setup(name='pyprophet-brutus',
+setup(name='pyprophet-jobs',
       version="%d.%d.%d" % version,
       author="Uwe Schmitt",
       author_email="uwe.schmitt@id.ethz.ch",
@@ -28,7 +28,7 @@ setup(name='pyprophet-brutus',
       ],
       entry_points={
           'console_scripts': [
-              "pyprophet-brutus=pyprophet_brutus.main:cli",
+              "pyprophet-cli=pyprophet_jobs.main:cli",
               ]
       },
       )
