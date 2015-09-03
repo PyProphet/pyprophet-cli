@@ -3,3 +3,4 @@ tmp/
 **/.*.sw?
 **/lsf.*
 venv
+dist
