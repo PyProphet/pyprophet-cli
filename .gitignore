@@ -1,4 +1,5 @@
-pyprophet_brutus.egg-info/
+pyprophet_cli.egg-info/
 tmp/
 **/.*.sw?
 **/lsf.*
+venv
