@@ -543,7 +543,7 @@ class Score(Job):
 
 def _load_drivers():
 
-    for ep in pkg_resources.iter_entry_points("pyprophet_jobs_driver", name="config"):
+    for ep in pkg_resources.iter_entry_points("pyprophet_cli_plugin", name="config"):
         try:
             driver = ep.load()
         except Exception:

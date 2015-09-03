@@ -27,7 +27,7 @@ for sub_class in Job.__subclasses__():
         @click.option("--log-file", type=click.File(mode="w"),
                       help="write logs to given file instead to stderr")
         def handler(log_level, log_file, **options):
-            logger = logging.getLogger("pyprophet-jobs")
+            logger = logging.getLogger("pyprophet-cli")
             logger.setLevel(log_level.upper())
             h = logging.StreamHandler(stream=log_file)
             fmt = "%(levelname)-8s -- [pid=%(process)5d] : %(asctime)s: %(message)s"
@@ -53,10 +53,3 @@ for sub_class in Job.__subclasses__():
 
     command_name = sub_class.command_name
     cli.command(name=command_name)(handler)
-
-
-
-"""
-todo: resolve order of jobs and create the "super command"
-"""
-
