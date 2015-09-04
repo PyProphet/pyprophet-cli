@@ -214,12 +214,16 @@ class Subsample(Job):
         ids = []
         overall_line_count = 0
         all_invalid = {}
+        chunk_count = 0
         for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+            chunk_count += 1
             ids.extend(chunk[self.ID_COL])
             overall_line_count += len(chunk)
             for name in chunk.columns:
                 col_data = chunk[name]
                 all_invalid[name] = all_invalid.get(name) or pd.isnull(col_data).all()
+
+        self.logger.info("read %d chunks from %s" % (chunk_count, path))
 
         invalid_colums = [name for (name, invalid) in all_invalid.items() if invalid]
         if not self.ignore_invalid_scores and invalid_colums:
@@ -273,11 +277,14 @@ class Subsample(Job):
         with open(out_path, "w") as fp:
 
             write_header = True
+            chunk_count = 0
             for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+                chunk_count += 1
                 chunk = chunk[chunk[self.ID_COL].isin(sample_ids)]
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
                 write_header = False
 
+        self.logger.info("   read %d chunks from %s" % (chunk_count, path))
         self.logger.info("   wrote %s" % out_path)
 
         if self.local_folder:
@@ -307,9 +314,8 @@ class Learn(Job):
         pyprophet = PyProphet()
 
         self.logger.info("read subsampled files from %s" % self.working_folder)
-        for path in pathes:
-            self.logger.info("    read %s" % path)
         tables = list(pyprophet.read_tables_iter(pathes, self.separator))
+        self.logger.info("finished readng subsampled files from %s" % self.working_folder)
 
         invalid_columns = list(_read_invalid_colums(self.working_folder))
         for table in tables:
@@ -365,14 +371,14 @@ class ApplyWeights(Job):
     def _local_job(self, i):
         if self.local_folder:
             self._copy_to_local(i)
-        self._score(i)
+        self._compute_scores(i)
 
     def _copy_to_local(self, i):
         path = self.input_file_pathes[i]
         self.logger.info("copy %s to %s" % (path, self.local_folder))
         shutil.copy(path, self.local_folder)
 
-    def _score(self, i):
+    def _compute_scores(self, i):
         path = self._pathes_of_files_for_processing[i]
 
         self.logger.info("start scoring %s" % path)
@@ -381,7 +387,9 @@ class ApplyWeights(Job):
         score_column_indices = None
         tg_ids = []
         invalid_columns = list(_read_invalid_colums(self.working_folder))
+        chunk_count = 0
         for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+            chunk_count += 1
             if score_column_indices is None:
                 score_column_indices = []
                 for (i, name) in enumerate(chunk.columns):
@@ -394,6 +402,8 @@ class ApplyWeights(Job):
             chunk = chunk.iloc[:, score_column_indices]
             scores = chunk.dot(self.weights)
             all_scores.append(scores)
+
+        self.logger.info("read %d chunks from %s" % (chunk_count, path))
 
         # we map the string representations to numerical ids, decoys have id -1,
         # targets and id > 0
@@ -526,7 +536,9 @@ class Score(Job):
         write_header = True
         with open(out_path, "w") as fp:
 
+            chunk_count = 0
             for chunk in pd.read_csv(in_path, sep=self.separator, chunksize=self.chunk_size):
+                chunk_count += 1
 
                 if score_names is None:
                     score_names = []
@@ -549,6 +561,7 @@ class Score(Job):
 
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
                 write_header = False
+            self.logger.info("processed %d chunks from %s" % (chunk_count, in_path))
 
         self.logger.info("wrote %s" % out_path)
 
