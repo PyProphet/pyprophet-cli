@@ -204,6 +204,7 @@ class Subsample(Job):
         path = self.input_file_pathes[i]
         self.logger.info("copy %s to %s" % (path, self.local_folder))
         shutil.copy(path, self.local_folder)
+        self.logger.info("copied %s to %s" % (path, self.local_folder))
 
     def _subsample(self, i):
         path = self._pathes_of_files_for_processing[i]
@@ -238,7 +239,7 @@ class Subsample(Job):
 
         # we shuffle the target_ids randomly:
         if self.random_seed:
-            self.logger.info("set random seed to %r" % self.random_seed)
+            self.logger.info("   set random seed to %r" % self.random_seed)
             random.seed(self.random_seed)
         random.shuffle(valid_targets)
 
@@ -258,12 +259,15 @@ class Subsample(Job):
         sample_decoys = set("DECOY_" + id_ for id_ in sample_targets)
         sample_ids = sample_targets | sample_decoys
 
-        self.logger.info("subsample %d target groups from %s" % (len(sample_ids), path))
+        self.logger.info("   now subsample %d target groups from %s" % (len(sample_ids), path))
 
         # determine name of result file
         stem = file_name_stem(path)
-        out_path = join(self.working_folder, SUBSAMPLED_FILES_PATTERN % stem)
-        self.logger.info("write to %s" % out_path)
+        if self.local_folder:
+            out_path = os.path.join(self.local_folder, SUBSAMPLED_FILES_PATTERN % stem)
+        else:
+            out_path = join(self.working_folder, SUBSAMPLED_FILES_PATTERN % stem)
+        self.logger.info("   start to subsample from %s and write to %s" % (path, out_path))
 
         # write result file
         with open(out_path, "w") as fp:
@@ -274,7 +278,15 @@ class Subsample(Job):
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
                 write_header = False
 
-        self.logger.info("wrote %s" % out_path)
+        self.logger.info("   wrote %s" % out_path)
+
+        if self.local_folder:
+            self.logger.info("   copy subsampled data from local folder to working folder")
+            shutil.copy(out_path, self.working_folder)
+            self.logger.info("   copied subsampled data from local folder to working folder")
+
+        self.logger.info("subsampling %s finished" % path)
+
 
 
 class Learn(Job):
