@@ -10,11 +10,23 @@ import time
 
 import click
 
+from version import version
+from core import Job
+
+
+def print_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo("%d.%d.%d" % version)
+    ctx.exit()
+
+
 @click.group()
+@click.option("--version", is_flag=True, callback=print_version, expose_value=False, is_eager=True,
+              help="print version of pyprophet-cli")
 def cli():
     pass
 
-from core import Job
 
 levels = map(string.lower, "CRITICAL ERROR WARNING INFO DEBUG".split())
 
