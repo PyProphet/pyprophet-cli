@@ -24,18 +24,21 @@ def test_data_folder():
 def setup(test_data_folder, request):
     num_files = request.param
     tmpdir = tempfile.mkdtemp()
+    print("----- tmpdir is", tmpdir)
     data_folder = os.path.join(tmpdir, "data_folder")
     os.makedirs(data_folder)
     working_folder = os.path.join(tmpdir, "working_folder")
     for i in range(num_files):
-        shutil.copy(os.path.join(test_data_folder, "test_data.txt"), os.path.join(data_folder, "data_%d.txt" % i))
+        shutil.copy(os.path.join(test_data_folder, "test_data.txt"),
+                    os.path.join(data_folder, "data_%d.txt" % i))
 
     Setup = collections.namedtuple("Setup", "data_folder working_folder number_input_files")
     return Setup(data_folder, working_folder, num_files)
 
 
-def test_check(setup):
-    cmd = ("pyprophet-cli check --data-folder %s" % setup.data_folder)
+def test_prepare(setup):
+    cmd = ("pyprophet-cli prepare --data-folder %s --working-folder %s" % (setup.data_folder,
+                                                                           setup.working_folder))
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
 
@@ -50,7 +53,7 @@ def test_subsample(setup):
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.working_folder)
-    assert len(files) == setup.number_input_files + 1
+    assert len(files) == setup.number_input_files + 2
 
     files.sort()
     subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
@@ -66,7 +69,7 @@ def test_subsample(setup):
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.working_folder)
-    assert len(files) == 2 if setup.number_input_files == 1 else 3
+    assert len(files) == 3 if setup.number_input_files == 1 else 4
 
     files.sort()
     subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
@@ -81,7 +84,7 @@ def test_subsample(setup):
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.working_folder)
-    assert len(files) == 2 if setup.number_input_files == 1 else 3
+    assert len(files) == 3 if setup.number_input_files == 1 else 4
 
     files.sort()
 

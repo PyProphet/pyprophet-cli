@@ -89,6 +89,7 @@ WEIGHTS_FILE_NAME = "weights.txt"
 SCORE_DATA_FILE_ENDING = "_score_data.npz"
 SCORED_ENDING = "_scored.txt"
 INVALID_COLUMNS_FILE = "invalid_columns.txt"
+SCORE_COLUMNS_FILE = "score_columns.txt"
 SUBSAMPLED_FILES_PATTERN = "subsampled_%s.txt"
 
 
@@ -109,17 +110,23 @@ class Job(object):
     __metaclass__ = JobMeta
 
 
-class CheckInputs(Job):
+class Prepare(Job):
 
     """runs validity tests on input files in DATA_FOLDER. this command mostly checks
     if the column names are consistent.
     """
 
-    command_name = "check"
-    options = [data_folder, separator, data_filename_pattern]
+    command_name = "prepare"
+    options = [data_folder, separator, data_filename_pattern, working_folder]
 
     def run(self):
-        self._check_headers()
+        self._setup_working_folder()
+        common_column_names = self._check_headers()
+        self._write_score_column_names(common_column_names)
+
+    def _setup_working_folder(self):
+        if not os.path.exists(self.working_folder):
+            os.makedirs(self.working_folder)
 
     def _check_headers(self):
         input_file_pathes = tools.scan_files(self.data_folder, self.data_filename_pattern)
@@ -139,6 +146,15 @@ class CheckInputs(Job):
                 msg.append(", ".join(map(repr(header))))
             raise InvalidInput("found different headers in input_files:" + "\n".join(msg))
         self.logger.info("header check succeeded")
+        return header
+
+    def _write_score_column_names(self, names):
+
+        score_columns = [name for name in names if name.startswith("main_") or\
+                                                   name.startswith("var_")]
+        with open(os.path.join(self.working_folder, SCORE_COLUMNS_FILE), "w") as fp:
+            for score_column in score_columns:
+                print(score_column, file=fp)
 
 
 def _setup_input_files(job, data_filename_pattern):
@@ -163,6 +179,14 @@ def _read_invalid_colums(working_folder):
             yield line.rstrip()
 
 
+def _setup_dtypes(working_folder):
+    dtype = {}
+    with open(os.path.join(working_folder, SCORE_COLUMNS_FILE), "r") as fp:
+        for line in fp:
+            dtype[line.rstrip()] = np.float32
+    return dtype
+
+
 class Subsample(Job):
 
     """subsamples transition groups from given input files in DATA_FOLDER.
@@ -171,10 +195,7 @@ class Subsample(Job):
 
     command_name = "subsample"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
-               random_seed,
-               chunk_size,
-               sample_factor,
-               data_filename_pattern,
+               random_seed, chunk_size, sample_factor, data_filename_pattern,
                ignore_invalid_scores,
                ]
 
@@ -191,8 +212,6 @@ class Subsample(Job):
             self._local_job(i)
 
     def _setup(self):
-        if not os.path.exists(self.working_folder):
-            os.makedirs(self.working_folder)
         _setup_input_files(self, self.data_filename_pattern)
 
     def _local_job(self, i):
@@ -215,7 +234,9 @@ class Subsample(Job):
         overall_line_count = 0
         all_invalid = {}
         chunk_count = 0
-        for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+        usecols = [self.ID_COL, "decoy"]
+        for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
+                                 usecols=usecols):
             chunk_count += 1
             ids.extend(chunk[self.ID_COL])
             overall_line_count += len(chunk)
@@ -273,12 +294,14 @@ class Subsample(Job):
             out_path = join(self.working_folder, SUBSAMPLED_FILES_PATTERN % stem)
         self.logger.info("   start to subsample from %s and write to %s" % (path, out_path))
 
+        dtype = _setup_dtypes(self.working_folder)
         # write result file
         with open(out_path, "w") as fp:
 
             write_header = True
             chunk_count = 0
-            for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+            for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
+                                     dtype=dtype):
                 chunk_count += 1
                 chunk = chunk[chunk[self.ID_COL].isin(sample_ids)]
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
@@ -388,7 +411,11 @@ class ApplyWeights(Job):
         tg_ids = []
         invalid_columns = list(_read_invalid_colums(self.working_folder))
         chunk_count = 0
-        for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size):
+
+        dtype = _setup_dtypes(self.working_folder)
+
+        for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
+                                 dtype=dtype):
             chunk_count += 1
             if score_column_indices is None:
                 score_column_indices = []
@@ -428,8 +455,7 @@ class Score(Job):
 
     command_name = "score"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
-               chunk_size,
-               data_filename_pattern,
+               chunk_size, data_filename_pattern,
                option("--overwrite-results", is_flag=True),
                option("--lambda", "lambda_", default=0.4,
                       help="lambda value for storeys method [default=0.4]")]
@@ -534,10 +560,14 @@ class Score(Job):
 
         self.logger.info("process %s" % in_path)
         write_header = True
+
+        dtype = _setup_dtypes(self.working_folder)
+
         with open(out_path, "w") as fp:
 
             chunk_count = 0
-            for chunk in pd.read_csv(in_path, sep=self.separator, chunksize=self.chunk_size):
+            for chunk in pd.read_csv(in_path, sep=self.separator, chunksize=self.chunk_size,
+                                     dtype=dtype):
                 chunk_count += 1
 
                 if score_names is None:
