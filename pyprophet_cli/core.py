@@ -19,7 +19,7 @@ import pandas as pd
 from . import tools
 
 from pyprophet.pyprophet import PyProphet
-from pyprophet.optimized import find_top_ranked
+from pyprophet.optimized import find_top_ranked, rank
 from pyprophet.stats import (calculate_final_statistics, summary_err_table,
                              lookup_s_and_q_values_from_error_table)
 
@@ -196,7 +196,6 @@ class Subsample(Job):
     command_name = "subsample"
     options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
                random_seed, chunk_size, sample_factor, data_filename_pattern,
-               ignore_invalid_scores,
                ]
 
     def run(self):
@@ -232,7 +231,6 @@ class Subsample(Job):
 
         ids = []
         overall_line_count = 0
-        all_invalid = {}
         chunk_count = 0
         usecols = [self.ID_COL, "decoy"]
         for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
@@ -242,18 +240,8 @@ class Subsample(Job):
             overall_line_count += len(chunk)
             for name in chunk.columns:
                 col_data = chunk[name]
-                all_invalid[name] = all_invalid.get(name) or pd.isnull(col_data).all()
 
         self.logger.info("read %d chunks from %s" % (chunk_count, path))
-
-        invalid_colums = [name for (name, invalid) in all_invalid.items() if invalid]
-        if not self.ignore_invalid_scores and invalid_colums:
-            msg = ", ".join(invalid_colums)
-            raise WorkflowError("columns %s only contain invalid/missing values" % msg)
-
-        with open(os.path.join(self.working_folder, INVALID_COLUMNS_FILE), "w") as fp:
-            for name in invalid_colums:
-                print(name, file=fp)
 
         line_counts = collections.Counter(ids)
 
@@ -326,23 +314,39 @@ class Learn(Job):
     """
 
     command_name = "learn"
-    options = [working_folder, separator, random_seed]
+    options = [working_folder, separator, random_seed, ignore_invalid_scores]
 
     def run(self):
         if self.random_seed:
             self.logger.info("set random seed to %r" % self.random_seed)
             random.seed(self.random_seed)
 
+
         pathes = tools.scan_files(self.working_folder, SUBSAMPLED_FILES_PATTERN % "*")
         pyprophet = PyProphet()
 
         self.logger.info("read subsampled files from %s" % self.working_folder)
         tables = list(pyprophet.read_tables_iter(pathes, self.separator))
-        self.logger.info("finished readng subsampled files from %s" % self.working_folder)
+        self.logger.info("finished reading subsampled files from %s" % self.working_folder)
 
-        invalid_columns = list(_read_invalid_colums(self.working_folder))
+        # collect colum names for which at least one input table contains only invalid names
+        invalid_columns = {}
         for table in tables:
-            table.drop(invalid_columns, axis=1, inplace=True)
+            for name in table.columns:
+                col_data = table[name]
+                invalid_columns[name] = invalid_columns.get(name) or pd.isnull(col_data).all()
+
+        invalid_column_names = [name for (name, invalid) in invalid_columns.items() if invalid]
+        if not self.ignore_invalid_scores and invalid_column_names:
+            msg = ", ".join(invalid_column_names)
+            raise WorkflowError("columns %s only contain invalid/missing values" % msg)
+
+        with open(os.path.join(self.working_folder, INVALID_COLUMNS_FILE), "w") as fp:
+            for name in invalid_column_names:
+                print(name, file=fp)
+
+        for table in tables:
+            table.drop(invalid_column_names, axis=1, inplace=True)
 
         self.logger.info("run pyprophet core algorithm")
         result, scorer, weights = pyprophet._learn_and_apply(tables)
@@ -427,24 +431,26 @@ class ApplyWeights(Job):
 
             tg_ids.extend(chunk[self.ID_COL])
             chunk = chunk.iloc[:, score_column_indices]
-            scores = chunk.dot(self.weights)
+            scores = chunk.dot(self.weights).astype(np.float32)
             all_scores.append(scores)
 
         self.logger.info("read %d chunks from %s" % (chunk_count, path))
 
-        # we map the string representations to numerical ids, decoys have id -1,
-        # targets and id > 0
-        # we need in next step: top_target_scores, all_decoy_scores and all_target_scores
-        decoy_tg_to_id = dict((id_, -1) for id_ in tg_ids if id_.startswith("DECOY_"))
+        # setup dict assigning target_group_ids to increasing integer numbers:
+        tg_numeric_ids = {}
+        last_id = 0
+        for tg_id in tg_ids:
+            if tg_id not in tg_numeric_ids:
+                tg_numeric_ids[tg_id] = last_id
+                last_id += 1
 
-        target_ids = [id_ for id_ in tg_ids if not id_.startswith("DECOY_")]
-        tg_to_id = dict((id_, i) for (i, id_) in enumerate(set(target_ids)))
-        tg_to_id.update(decoy_tg_to_id)
-        numeric_ids = [tg_to_id.get(id_) for id_ in tg_ids]
+        numeric_ids = map(tg_numeric_ids.get, tg_ids)
+        decoy_flags = map(lambda tg_id: tg_id.startswith("DECOY_"), tg_ids)
 
         stem = file_name_stem(path)
         out_path = join(self.working_folder, stem + SCORE_DATA_FILE_ENDING)
-        np.savez(out_path, tg_ids=numeric_ids, scores=np.hstack(all_scores))
+        np.savez(out_path, numeric_ids=numeric_ids, decoy_flags=decoy_flags,
+                           scores=np.hstack(all_scores))
         self.logger.info("wrote %s" % out_path)
 
 
@@ -473,6 +479,7 @@ class Score(Job):
 
     def _load_score_data(self):
         all_scores = []
+        all_decoy_flags = []
         all_ids = []
         last_max = 0
         for name in os.listdir(self.working_folder):
@@ -480,38 +487,54 @@ class Score(Job):
                 path = join(self.working_folder, name)
                 npzfile = np.load(path)
 
-                ids = npzfile["tg_ids"]
-                ids[ids >= 0] += last_max
-                last_max = np.max(ids)
-                all_ids.append(ids)
+                numeric_ids = npzfile["numeric_ids"]
+                numeric_ids += last_max
+                last_max = np.max(numeric_ids)
+                all_ids.append(numeric_ids)
 
                 scores = npzfile["scores"]
                 all_scores.append(scores)
+
+                decoy_flags = npzfile["decoy_flags"]
+                all_decoy_flags.append(decoy_flags)
 
         if not all_scores:
             raise WorkflowError("no score matrices found in %s" % self.working_folder)
 
         self.scores = np.hstack(all_scores)
         self.ids = np.hstack(all_ids)
+        self.decoy_flags = np.hstack(all_decoy_flags)
 
     def _create_global_stats(self):
 
-        decoy_scores = self.scores[self.ids == -1]
+        # we precautiously sort the ids and apply the same permutation to
+        # the decoy flags and scores:
+        assert np.all(sorted(self.ids) == self.ids), "incoming transition groups were scattered in file"
 
-        mean = np.mean(decoy_scores)
-        std_dev = np.std(decoy_scores, ddof=1)
+        # perm = np.argsort(self.ids)
+        # self.ids = self.ids[perm]
+        # self.decoy_flags = self.decoy_flags[perm]
+        # self.scores = self.scores[perm]
 
+        decoy_scores = self.scores[self.decoy_flags]
+        decoy_ids    = self.ids[self.decoy_flags]
+
+        assert decoy_ids.shape == decoy_scores.shape
+        flags = find_top_ranked(decoy_ids, decoy_scores).astype(bool)
+        top_decoy_scores = decoy_scores[flags]
+
+        mean = np.mean(top_decoy_scores)
+        std_dev = np.std(top_decoy_scores, ddof=1)
         self.decoy_mean = mean
         self.decoy_std = std_dev
 
         decoy_scores = (decoy_scores - mean) / std_dev
 
-        target_ids = (self.ids >= 0)
-        target_scores = self.scores[target_ids]
+        target_scores = self.scores[~self.decoy_flags]
         target_scores = (target_scores - mean) / std_dev
+        target_ids = self.ids[~self.decoy_flags]
 
-        target_ids = self.ids[target_ids]
-
+        assert target_ids.shape == target_scores.shape
         flags = find_top_ranked(target_ids, target_scores).astype(bool)
         top_target_scores = target_scores[flags]
 
@@ -540,10 +563,19 @@ class Score(Job):
         if not os.path.exists(score_path):
             raise WorkflowError("file %s does not exist" % score_path)
 
+        # todo
+        # fix nps file reading
+        # compute and assign peakgroup ranks !
+        # complete regression tests for apply_weights and score steps !
+
         self.logger.info("load scores %s" % score_path)
+
         npzfile = np.load(score_path)
         scores = npzfile["scores"]
         scores = (scores - self.decoy_mean) / self.decoy_std
+
+        numeric_ids = npzfile["numeric_ids"]
+        ranks = rank(numeric_ids, scores)
 
         row_idx = 0
         score_names = None
@@ -582,15 +614,17 @@ class Score(Job):
                 # we have  to build a data frame because lookup_s_and_q_values_from_error_table
                 # functions expectes this:
                 d_scores = scores[row_idx: row_idx + nrows]
-                chunk_scores = pd.DataFrame(dict(scores=d_scores))
-                row_idx += nrows
-                s, q = lookup_s_and_q_values_from_error_table(chunk_scores["scores"], self.stats.df)
+                # chunk_scores = pd.DataFrame(dict(scores=d_scores))
+                s, q = lookup_s_and_q_values_from_error_table(d_scores, self.stats.df)
                 chunk["d_score"] = d_scores
                 chunk["m_score"] = q
-                chunk["s_value"] = s
+                chunk["peak_group_rank"] = ranks[row_idx: row_idx + nrows]
 
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
+                row_idx += nrows
+
                 write_header = False
+
             self.logger.info("processed %d chunks from %s" % (chunk_count, in_path))
 
         self.logger.info("wrote %s" % out_path)

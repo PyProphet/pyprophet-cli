@@ -106,12 +106,21 @@ def test_learn(setup, regtest):
     for name in ("weights.txt", "sum_stat_subsampled.txt"):
         df = pandas.read_csv(os.path.join(setup.working_folder, name), header=None, sep="\t")
         print(df, file=regtest)
-        # print(open(os.path.join(setup.working_folder, name), "r").read(), file=regtest)
 
 
 def test_apply_weights(setup, regtest):
     cmd = ("pyprophet-cli apply_weights --job-number 1 --job-count 1 "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
+    ret_code = subprocess.call(cmd, shell=True)
+    assert ret_code == 0
+
+
+def test_apply_weights(setup, regtest):
+    cmd = ("pyprophet-cli score --job-number 1 --job-count 1 "
+           "--local-folder %s "
+           "--data-filename-pattern '*.txt' "
+           "--data-folder %s "
+           "--working-folder %s") % (tempfile.mkdtemp(), setup.data_folder, setup.working_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
