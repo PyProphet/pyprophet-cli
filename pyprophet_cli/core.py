@@ -41,9 +41,14 @@ data_folder = option("--data-folder", help="folder of input data to process",
                      type=Path(exists=True, file_okay=False, dir_okay=True, readable=True),
                      required=True)
 
-working_folder = option("--working-folder",
+work_folder = option("--work-folder",
                         help="folder for intermediate results which are needed by following processing steps",
                         type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
+                        required=True)
+
+result_folder = option("--result-folder",
+                        help="folder for final results",
+                        type=Path(file_okay=False, dir_okay=True, writable=True),
                         required=True)
 
 local_folder = option("--local-folder",
@@ -117,16 +122,16 @@ class Prepare(Job):
     """
 
     command_name = "prepare"
-    options = [data_folder, separator, data_filename_pattern, working_folder]
+    options = [data_folder, separator, data_filename_pattern, work_folder]
 
     def run(self):
-        self._setup_working_folder()
+        self._setup_work_folder()
         common_column_names = self._check_headers()
         self._write_score_column_names(common_column_names)
 
-    def _setup_working_folder(self):
-        if not os.path.exists(self.working_folder):
-            os.makedirs(self.working_folder)
+    def _setup_work_folder(self):
+        if not os.path.exists(self.work_folder):
+            os.makedirs(self.work_folder)
 
     def _check_headers(self):
         input_file_pathes = tools.scan_files(self.data_folder, self.data_filename_pattern)
@@ -152,7 +157,7 @@ class Prepare(Job):
 
         score_columns = [name for name in names if name.startswith("main_") or\
                                                    name.startswith("var_")]
-        with open(os.path.join(self.working_folder, SCORE_COLUMNS_FILE), "w") as fp:
+        with open(os.path.join(self.work_folder, SCORE_COLUMNS_FILE), "w") as fp:
             for score_column in score_columns:
                 print(score_column, file=fp)
 
@@ -173,15 +178,15 @@ def _setup_input_files(job, data_filename_pattern):
         job._pathes_of_files_for_processing.append(path)
 
 
-def _read_invalid_colums(working_folder):
-    with open(os.path.join(working_folder, INVALID_COLUMNS_FILE), "r") as fp:
+def _read_invalid_colums(work_folder):
+    with open(os.path.join(work_folder, INVALID_COLUMNS_FILE), "r") as fp:
         for line in fp:
             yield line.rstrip()
 
 
-def _setup_dtypes(working_folder):
+def _setup_dtypes(work_folder):
     dtype = {}
-    with open(os.path.join(working_folder, SCORE_COLUMNS_FILE), "r") as fp:
+    with open(os.path.join(work_folder, SCORE_COLUMNS_FILE), "r") as fp:
         for line in fp:
             dtype[line.rstrip()] = np.float32
     return dtype
@@ -190,11 +195,11 @@ def _setup_dtypes(working_folder):
 class Subsample(Job):
 
     """subsamples transition groups from given input files in DATA_FOLDER.
-    For following procession steps the data is written to the provided WORKING_FOLDER.
+    For following procession steps the data is written to the provided WORK_FOLDER.
     """
 
     command_name = "subsample"
-    options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
+    options = [job_number, job_count, local_folder, separator, data_folder, work_folder,
                random_seed, chunk_size, sample_factor, data_filename_pattern,
                ]
 
@@ -279,10 +284,10 @@ class Subsample(Job):
         if self.local_folder:
             out_path = os.path.join(self.local_folder, SUBSAMPLED_FILES_PATTERN % stem)
         else:
-            out_path = join(self.working_folder, SUBSAMPLED_FILES_PATTERN % stem)
+            out_path = join(self.work_folder, SUBSAMPLED_FILES_PATTERN % stem)
         self.logger.info("   start to subsample from %s and write to %s" % (path, out_path))
 
-        dtype = _setup_dtypes(self.working_folder)
+        dtype = _setup_dtypes(self.work_folder)
         # write result file
         with open(out_path, "w") as fp:
 
@@ -299,9 +304,9 @@ class Subsample(Job):
         self.logger.info("   wrote %s" % out_path)
 
         if self.local_folder:
-            self.logger.info("   copy subsampled data from local folder to working folder")
-            shutil.copy(out_path, self.working_folder)
-            self.logger.info("   copied subsampled data from local folder to working folder")
+            self.logger.info("   copy subsampled data from local folder to work folder")
+            shutil.copy(out_path, self.work_folder)
+            self.logger.info("   copied subsampled data from local folder to work folder")
 
         self.logger.info("subsampling %s finished" % path)
 
@@ -309,12 +314,12 @@ class Subsample(Job):
 
 class Learn(Job):
 
-    """runs pyprophet learner on data files in WORKING_FOLDER.
+    """runs pyprophet learner on data files in WORK_FOLDER.
     writes weights files in this folder.
     """
 
     command_name = "learn"
-    options = [working_folder, separator, random_seed, ignore_invalid_scores]
+    options = [work_folder, separator, random_seed, ignore_invalid_scores]
 
     def run(self):
         if self.random_seed:
@@ -322,12 +327,12 @@ class Learn(Job):
             random.seed(self.random_seed)
 
 
-        pathes = tools.scan_files(self.working_folder, SUBSAMPLED_FILES_PATTERN % "*")
+        pathes = tools.scan_files(self.work_folder, SUBSAMPLED_FILES_PATTERN % "*")
         pyprophet = PyProphet()
 
-        self.logger.info("read subsampled files from %s" % self.working_folder)
+        self.logger.info("read subsampled files from %s" % self.work_folder)
         tables = list(pyprophet.read_tables_iter(pathes, self.separator))
-        self.logger.info("finished reading subsampled files from %s" % self.working_folder)
+        self.logger.info("finished reading subsampled files from %s" % self.work_folder)
 
         # collect colum names for which at least one input table contains only invalid names
         invalid_columns = {}
@@ -341,7 +346,7 @@ class Learn(Job):
             msg = ", ".join(invalid_column_names)
             raise WorkflowError("columns %s only contain invalid/missing values" % msg)
 
-        with open(os.path.join(self.working_folder, INVALID_COLUMNS_FILE), "w") as fp:
+        with open(os.path.join(self.work_folder, INVALID_COLUMNS_FILE), "w") as fp:
             for name in invalid_column_names:
                 print(name, file=fp)
 
@@ -354,25 +359,25 @@ class Learn(Job):
             self.logger.info(line.rstrip())
 
         self.logger.info("write sum_stat_subsampled.txt")
-        with open(join(self.working_folder, "sum_stat_subsampled.txt"), "w") as fp:
+        with open(join(self.work_folder, "sum_stat_subsampled.txt"), "w") as fp:
             result.summary_statistics.to_csv(fp, sep=self.separator, index=False)
 
         self.logger.info("write full_stat_subsampled.txt")
-        with open(join(self.working_folder, "full_stat_subsampled.txt"), "w") as fp:
+        with open(join(self.work_folder, "full_stat_subsampled.txt"), "w") as fp:
             result.final_statistics.to_csv(fp, sep=self.separator, index=False)
 
-        weights_path = join(self.working_folder, WEIGHTS_FILE_NAME)
+        weights_path = join(self.work_folder, WEIGHTS_FILE_NAME)
         self.logger.info("write {}".format(weights_path))
         np.savetxt(weights_path, weights)
 
 
 class ApplyWeights(Job):
 
-    """applies weights to given data files and writes them to WORKING_FOLDER
+    """applies weights to given data files and writes them to WORK_FOLDER
     """
 
     command_name = "apply_weights"
-    options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
+    options = [job_number, job_count, local_folder, separator, data_folder, work_folder,
                chunk_size, data_filename_pattern]
 
     def run(self):
@@ -386,7 +391,7 @@ class ApplyWeights(Job):
         self._load_weights()
 
     def _load_weights(self):
-        weights_path = join(self.working_folder, WEIGHTS_FILE_NAME)
+        weights_path = join(self.work_folder, WEIGHTS_FILE_NAME)
         if not os.path.exists(weights_path):
             raise WorkflowError("did not find file %s, maybe one of the previous steps of the "
                                 "pyprophet workflow is broken" % weights_path)
@@ -413,10 +418,10 @@ class ApplyWeights(Job):
         all_scores = []
         score_column_indices = None
         tg_ids = []
-        invalid_columns = list(_read_invalid_colums(self.working_folder))
+        invalid_columns = list(_read_invalid_colums(self.work_folder))
         chunk_count = 0
 
-        dtype = _setup_dtypes(self.working_folder)
+        dtype = _setup_dtypes(self.work_folder)
 
         for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
                                  dtype=dtype):
@@ -448,7 +453,7 @@ class ApplyWeights(Job):
         decoy_flags = map(lambda tg_id: tg_id.startswith("DECOY_"), tg_ids)
 
         stem = file_name_stem(path)
-        out_path = join(self.working_folder, stem + SCORE_DATA_FILE_ENDING)
+        out_path = join(self.work_folder, stem + SCORE_DATA_FILE_ENDING)
         np.savez(out_path, numeric_ids=numeric_ids, decoy_flags=decoy_flags,
                            scores=np.hstack(all_scores))
         self.logger.info("wrote %s" % out_path)
@@ -456,12 +461,13 @@ class ApplyWeights(Job):
 
 class Score(Job):
 
-    """applies weights to given data files and writes them to WORKING_FOLDER
+    """applies weights to given data files and writes them to WORK_FOLDER
     """
 
     command_name = "score"
-    options = [job_number, job_count, local_folder, separator, data_folder, working_folder,
+    options = [job_number, job_count, local_folder, separator, data_folder, work_folder,
                chunk_size, data_filename_pattern,
+               result_folder, 
                option("--overwrite-results", is_flag=True),
                option("--lambda", "lambda_", default=0.4,
                       help="lambda value for storeys method [default=0.4]"),
@@ -484,9 +490,9 @@ class Score(Job):
         all_decoy_flags = []
         all_ids = []
         last_max = 0
-        for name in os.listdir(self.working_folder):
+        for name in os.listdir(self.work_folder):
             if name.endswith(SCORE_DATA_FILE_ENDING):
-                path = join(self.working_folder, name)
+                path = join(self.work_folder, name)
                 npzfile = np.load(path)
 
                 numeric_ids = npzfile["numeric_ids"]
@@ -501,7 +507,7 @@ class Score(Job):
                 all_decoy_flags.append(decoy_flags)
 
         if not all_scores:
-            raise WorkflowError("no score matrices found in %s" % self.working_folder)
+            raise WorkflowError("no score matrices found in %s" % self.work_folder)
 
         self.scores = np.hstack(all_scores)
         self.ids = np.hstack(all_ids)
@@ -561,7 +567,7 @@ class Score(Job):
     def _score(self, i):
         in_path = self._pathes_of_files_for_processing[i]
 
-        score_path = join(self.working_folder, file_name_stem(in_path) + SCORE_DATA_FILE_ENDING)
+        score_path = join(self.work_folder, file_name_stem(in_path) + SCORE_DATA_FILE_ENDING)
         if not os.path.exists(score_path):
             raise WorkflowError("file %s does not exist" % score_path)
 
@@ -582,20 +588,19 @@ class Score(Job):
         row_idx = 0
         score_names = None
 
-        result_folder = os.path.join(self.working_folder, "results")
-        if not self.overwrite_results and os.path.exists(result_folder):
-            if os.listdir(result_folder):
+        if not self.overwrite_results and os.path.exists(self.result_folder):
+            if os.listdir(self.result_folder):
                 raise WorkflowError("result folder is not empty, you may use --overwrite-results")
 
-        if not os.path.exists(result_folder):
-            os.makedirs(result_folder)
+        if not os.path.exists(self.result_folder):
+            os.makedirs(self.result_folder)
 
-        out_path = join(result_folder, file_name_stem(in_path) + SCORED_ENDING)
+        out_path = join(self.result_folder, file_name_stem(in_path) + SCORED_ENDING)
 
         self.logger.info("process %s" % in_path)
         write_header = True
 
-        dtype = _setup_dtypes(self.working_folder)
+        dtype = _setup_dtypes(self.work_folder)
 
         with open(out_path, "w") as fp:
 
