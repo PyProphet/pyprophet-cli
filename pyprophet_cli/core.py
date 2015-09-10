@@ -464,7 +464,9 @@ class Score(Job):
                chunk_size, data_filename_pattern,
                option("--overwrite-results", is_flag=True),
                option("--lambda", "lambda_", default=0.4,
-                      help="lambda value for storeys method [default=0.4]")]
+                      help="lambda value for storeys method [default=0.4]"),
+               option("--d-score-cutoff", type=float, default=None,
+                      help="filter output files by given d-score threshold")]
 
     def run(self):
         """run processing step from commandline"""
@@ -619,6 +621,9 @@ class Score(Job):
                 chunk["d_score"] = d_scores
                 chunk["m_score"] = q
                 chunk["peak_group_rank"] = ranks[row_idx: row_idx + nrows]
+
+                if self.d_score_cutoff is not None:
+                    chunk = chunk[chunk["d_score"] >= self.d_score_cutoff]
 
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
                 row_idx += nrows
