@@ -27,18 +27,18 @@ def setup(test_data_folder, request):
     print("----- tmpdir is", tmpdir)
     data_folder = os.path.join(tmpdir, "data_folder")
     os.makedirs(data_folder)
-    working_folder = os.path.join(tmpdir, "working_folder")
+    work_folder = os.path.join(tmpdir, "work_folder")
     for i in range(num_files):
         shutil.copy(os.path.join(test_data_folder, "test_data.txt"),
                     os.path.join(data_folder, "data_%d.txt" % i))
 
-    Setup = collections.namedtuple("Setup", "data_folder working_folder number_input_files")
-    return Setup(data_folder, working_folder, num_files)
+    Setup = collections.namedtuple("Setup", "data_folder work_folder number_input_files")
+    return Setup(data_folder, work_folder, num_files)
 
 
 def test_prepare(setup):
-    cmd = ("pyprophet-cli prepare --data-folder %s --working-folder %s" % (setup.data_folder,
-                                                                           setup.working_folder))
+    cmd = ("pyprophet-cli prepare --data-folder %s --work-folder %s" % (setup.data_folder,
+                                                                           setup.work_folder))
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
 
@@ -49,14 +49,14 @@ def test_subsample(setup):
            "--random-seed 43 "
            "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
-           "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
+           "--data-folder %s --work-folder %s") % (setup.data_folder, setup.work_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
-    files = os.listdir(setup.working_folder)
+    files = os.listdir(setup.work_folder)
     assert len(files) == setup.number_input_files + 2
 
     files.sort()
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
+    subsamples = pandas.read_csv(os.path.join(setup.work_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
     cmd = ("pyprophet-cli subsample --job-number 1 --job-count 2 "
@@ -64,15 +64,15 @@ def test_subsample(setup):
            "--random-seed 43 "
            "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
-           "--data-folder %s --working-folder %s "
-           "--local-folder %s") % (setup.data_folder, setup.working_folder, tempfile.mkdtemp())
+           "--data-folder %s --work-folder %s "
+           "--local-folder %s") % (setup.data_folder, setup.work_folder, tempfile.mkdtemp())
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
-    files = os.listdir(setup.working_folder)
+    files = os.listdir(setup.work_folder)
     assert len(files) == 3 if setup.number_input_files == 1 else 4
 
     files.sort()
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
+    subsamples = pandas.read_csv(os.path.join(setup.work_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
     cmd = ("pyprophet-cli subsample --job-number 1 --job-count 2 "
@@ -80,38 +80,38 @@ def test_subsample(setup):
            "--random-seed 43 "
            "--ignore-invalid-scores "
            "--data-filename-pattern '*.txt' "
-           "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
+           "--data-folder %s --work-folder %s") % (setup.data_folder, setup.work_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
-    files = os.listdir(setup.working_folder)
+    files = os.listdir(setup.work_folder)
     assert len(files) == 3 if setup.number_input_files == 1 else 4
 
     files.sort()
 
-    subsamples = pandas.read_csv(os.path.join(setup.working_folder, files[-1]), sep="\t")
+    subsamples = pandas.read_csv(os.path.join(setup.work_folder, files[-1]), sep="\t")
     assert subsamples.shape == (934, 21)
 
 
 def test_learn(setup, regtest):
-    cmd = ("pyprophet-cli learn --random-seed 43 --working-folder %s" % setup.working_folder)
+    cmd = ("pyprophet-cli learn --random-seed 43 --work-folder %s" % setup.work_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
 
-    files = sorted(os.listdir(setup.working_folder))
+    files = sorted(os.listdir(setup.work_folder))
 
     for i, file_ in enumerate(files):
-        path = os.path.join(setup.working_folder, file_)
+        path = os.path.join(setup.work_folder, file_)
         print(i, "%7d" % os.stat(path).st_size, file_, file=regtest)
 
     for name in ("weights.txt", "sum_stat_subsampled.txt"):
-        df = pandas.read_csv(os.path.join(setup.working_folder, name), header=None, sep="\t")
+        df = pandas.read_csv(os.path.join(setup.work_folder, name), header=None, sep="\t")
         print(df, file=regtest)
 
 
 def test_apply_weights(setup, regtest):
     cmd = ("pyprophet-cli apply_weights --job-number 1 --job-count 1 "
            "--data-filename-pattern '*.txt' "
-           "--data-folder %s --working-folder %s") % (setup.data_folder, setup.working_folder)
+           "--data-folder %s --work-folder %s") % (setup.data_folder, setup.work_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
 
@@ -121,6 +121,6 @@ def test_apply_weights(setup, regtest):
            "--local-folder %s "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s "
-           "--working-folder %s") % (tempfile.mkdtemp(), setup.data_folder, setup.working_folder)
+           "--work-folder %s") % (tempfile.mkdtemp(), setup.data_folder, setup.work_folder)
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
