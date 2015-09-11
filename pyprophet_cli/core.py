@@ -449,7 +449,10 @@ class ApplyWeights(Job):
                 tg_numeric_ids[tg_id] = last_id
                 last_id += 1
 
-        numeric_ids = map(tg_numeric_ids.get, tg_ids)
+        numeric_ids = np.array(map(tg_numeric_ids.get, tg_ids))
+        assert np.all(numeric_ids == sorted(numeric_ids)),\
+                                          "incoming transition group ids are scattered over file !"
+
         decoy_flags = map(lambda tg_id: tg_id.startswith("DECOY_"), tg_ids)
 
         stem = file_name_stem(path)
@@ -496,8 +499,9 @@ class Score(Job):
                 npzfile = np.load(path)
 
                 numeric_ids = npzfile["numeric_ids"]
+                assert np.all(sorted(numeric_ids) == numeric_ids), "incoming transition groups were scattered in file"
                 numeric_ids += last_max
-                last_max = np.max(numeric_ids)
+                last_max = np.max(numeric_ids) + 1
                 all_ids.append(numeric_ids)
 
                 scores = npzfile["scores"]
@@ -510,22 +514,13 @@ class Score(Job):
             raise WorkflowError("no score matrices found in %s" % self.work_folder)
 
         self.scores = np.hstack(all_scores)
-        self.ids = np.hstack(all_ids)
+        self.numeric_ids = np.hstack(all_ids)
         self.decoy_flags = np.hstack(all_decoy_flags)
 
     def _create_global_stats(self):
 
-        # we precautiously sort the ids and apply the same permutation to
-        # the decoy flags and scores:
-        assert np.all(sorted(self.ids) == self.ids), "incoming transition groups were scattered in file"
-
-        # perm = np.argsort(self.ids)
-        # self.ids = self.ids[perm]
-        # self.decoy_flags = self.decoy_flags[perm]
-        # self.scores = self.scores[perm]
-
         decoy_scores = self.scores[self.decoy_flags]
-        decoy_ids    = self.ids[self.decoy_flags]
+        decoy_ids    = self.numeric_ids[self.decoy_flags]
 
         assert decoy_ids.shape == decoy_scores.shape
         flags = find_top_ranked(decoy_ids, decoy_scores).astype(bool)
@@ -540,7 +535,7 @@ class Score(Job):
 
         target_scores = self.scores[~self.decoy_flags]
         target_scores = (target_scores - mean) / std_dev
-        target_ids = self.ids[~self.decoy_flags]
+        target_ids = self.numeric_ids[~self.decoy_flags]
 
         assert target_ids.shape == target_scores.shape
         flags = find_top_ranked(target_ids, target_scores).astype(bool)
