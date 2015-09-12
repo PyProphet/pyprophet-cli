@@ -1,7 +1,5 @@
 # encoding: utf-8
-
 # vim: et sw=4 ts=4
-
 from __future__ import print_function
 
 import os

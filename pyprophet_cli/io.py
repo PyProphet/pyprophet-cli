@@ -10,7 +10,6 @@ from exceptions import WorkflowError
 from constants import SCORE_COLUMNS_FILE, INVALID_COLUMNS_FILE
 
 
-
 join = os.path.join
 basename = os.path.basename
 splitext = os.path.splitext
@@ -62,4 +61,3 @@ def read_invalid_colums(work_folder):
         for line in fp:
             columns.append(line.rstrip())
     return columns
-

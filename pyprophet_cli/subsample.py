@@ -1,3 +1,5 @@
+# encoding: utf-8
+from __future__ import print_function
 
 import collections
 import os
@@ -68,8 +70,6 @@ class Subsample(core.Job):
             chunk_count += 1
             ids.extend(chunk[self.ID_COL])
             overall_line_count += len(chunk)
-            for name in chunk.columns:
-                col_data = chunk[name]
 
         self.logger.info("read %d chunks from %s" % (chunk_count, path))
 
@@ -133,4 +133,3 @@ class Subsample(core.Job):
             shutil.copy(out_path, self.work_folder)
             self.logger.info("   copied subsampled data from local folder to work folder")
 
-        self.logger.info("subsampling %s finished" % path)

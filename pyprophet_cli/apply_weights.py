@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 from os.path import join, exists
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -94,13 +95,12 @@ class ApplyWeights(Job):
 
         numeric_ids = np.array(map(tg_numeric_ids.get, tg_ids))
         assert np.all(numeric_ids == sorted(numeric_ids)),\
-                                          "incoming transition group ids are scattered over file !"
+            "incoming transition group ids are scattered over file !"
 
         decoy_flags = map(lambda tg_id: tg_id.startswith("DECOY_"), tg_ids)
 
         stem = io.file_name_stem(path)
         out_path = join(self.work_folder, stem + SCORE_DATA_FILE_ENDING)
         np.savez(out_path, numeric_ids=numeric_ids, decoy_flags=decoy_flags,
-                           scores=np.hstack(all_scores))
+                 scores=np.hstack(all_scores))
         self.logger.info("wrote %s" % out_path)
-

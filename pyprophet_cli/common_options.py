@@ -1,7 +1,6 @@
 # encoding: utf-8
 from __future__ import print_function
 
-
 import click
 
 Path = click.Path
@@ -14,14 +13,14 @@ data_folder = option("--data-folder", help="folder of input data to process",
                      required=True)
 
 work_folder = option("--work-folder",
-                        help="folder for intermediate results which are needed by following processing steps",
-                        type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
-                        required=True)
+                     help="folder for intermediate results which are needed by following processing steps",
+                     type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),
+                     required=True)
 
 result_folder = option("--result-folder",
-                        help="folder for final results",
-                        type=Path(file_okay=False, dir_okay=True, writable=True),
-                        required=True)
+                       help="folder for final results",
+                       type=Path(file_okay=False, dir_okay=True, writable=True),
+                       required=True)
 
 local_folder = option("--local-folder",
                       type=Path(file_okay=False, dir_okay=True, readable=True, writable=True),

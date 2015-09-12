@@ -1,24 +1,22 @@
 # encoding: utf-8
-
 # vim: et sw=4 ts=4
-
+from __future__ import print_function
 
 import logging
-import math
-import random
 import string
-import time
 
 import click
 
 from version import version
-from core import Job
 
+# we import all subcommands here so that the subclases of Job are registered below !
 import prepare
 import subsample
 import learn
 import apply_weights
 import score
+
+from core import Job
 
 
 def print_version(ctx, param, value):

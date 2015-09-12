@@ -7,10 +7,9 @@ import pandas as pd
 
 import io
 import core
-
 from common_options import data_folder, separator, data_filename_pattern, work_folder
-
 from constants import SCORE_COLUMNS_FILE
+from exceptions import InvalidInput
 
 
 class Prepare(core.Job):
@@ -53,9 +52,8 @@ class Prepare(core.Job):
 
     def _write_score_column_names(self, names):
 
-        score_columns = [name for name in names if name.startswith("main_") or\
-                                                   name.startswith("var_")]
+        score_columns = [name for name in names if name.startswith("main_") or
+                         name.startswith("var_")]
         with open(os.path.join(self.work_folder, SCORE_COLUMNS_FILE), "w") as fp:
             for score_column in score_columns:
                 print(score_column, file=fp)
-

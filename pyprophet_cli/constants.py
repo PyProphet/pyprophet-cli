@@ -1,7 +1,6 @@
 # encoding: utf-8
 from __future__ import print_function
 
-
 WEIGHTS_FILE_NAME = "weights.txt"
 SCORE_DATA_FILE_ENDING = "_score_data.npz"
 SCORED_ENDING = "_scored.txt"

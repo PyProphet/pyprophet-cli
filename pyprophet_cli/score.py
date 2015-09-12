@@ -36,9 +36,9 @@ class Score(Job):
                result_folder,
                click.option("--overwrite-results", is_flag=True),
                click.option("--lambda", "lambda_", default=0.4,
-                      help="lambda value for storeys method [default=0.4]"),
+                            help="lambda value for storeys method [default=0.4]"),
                click.option("--d-score-cutoff", type=float, default=None,
-                      help="filter output files by given d-score threshold")]
+                            help="filter output files by given d-score threshold")]
 
     def run(self):
         """run processing step from commandline"""
@@ -92,7 +92,7 @@ class Score(Job):
     def _create_global_stats(self):
 
         decoy_scores = self.scores[self.decoy_flags]
-        decoy_ids    = self.numeric_ids[self.decoy_flags]
+        decoy_ids = self.numeric_ids[self.decoy_flags]
 
         assert decoy_ids.shape == decoy_scores.shape
         flags = find_top_ranked(decoy_ids, decoy_scores).astype(bool)
@@ -197,4 +197,3 @@ class Score(Job):
             self.logger.info("processed %d chunks from %s" % (chunk_count, in_path))
 
         self.logger.info("wrote %s" % out_path)
-

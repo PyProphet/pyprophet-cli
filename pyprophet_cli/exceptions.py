@@ -8,4 +8,3 @@ class InvalidInput(Exception):
 
 class WorkflowError(Exception):
     pass
-

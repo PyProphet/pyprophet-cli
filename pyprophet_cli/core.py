@@ -1,8 +1,6 @@
 # encoding: utf-8
 # vi: et sw=4 ts=4
-
 from __future__ import print_function
-
 
 import pkg_resources
 from exceptions import WorkflowError
