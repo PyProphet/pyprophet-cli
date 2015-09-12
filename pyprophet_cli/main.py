@@ -2,6 +2,7 @@
 
 # vim: et sw=4 ts=4
 
+
 import logging
 import math
 import random
@@ -12,6 +13,12 @@ import click
 
 from version import version
 from core import Job
+
+import prepare
+import subsample
+import learn
+import apply_weights
+import score
 
 
 def print_version(ctx, param, value):
