@@ -10,13 +10,11 @@ import numpy as np
 
 from pyprophet.pyprophet import PyProphet
 
-import io
-from common_options import work_folder, separator, random_seed, ignore_invalid_scores
-import core
+from . import io, core
+from .common_options import work_folder, separator, random_seed, ignore_invalid_scores
+from .constants import SUBSAMPLED_FILES_PATTERN, INVALID_COLUMNS_FILE, WEIGHTS_FILE_NAME
 
-from constants import SUBSAMPLED_FILES_PATTERN, INVALID_COLUMNS_FILE, WEIGHTS_FILE_NAME
-
-from exceptions import WorkflowError
+from .exceptions import WorkflowError
 
 
 join = os.path.join

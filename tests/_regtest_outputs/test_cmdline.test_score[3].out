@@ -1,34 +1,70 @@
- 0  448091 result_folder_3/data_0_scored.txt
- 1  448091 result_folder_3/data_1_scored.txt
- 2  448091 result_folder_3/data_2_scored.txt
- 3     856 result_folder_3/summary_stats.txt
- 0  119715 work_folder/data_0_score_data.npz
- 1  119715 work_folder/data_1_score_data.npz
- 2  119715 work_folder/data_2_score_data.npz
- 3    5681 work_folder/full_stat_subsampled.txt
- 4      17 work_folder/invalid_columns.txt
- 5     392 work_folder/score_columns.txt
- 6 1049943 work_folder/subsampled_data_0.txt
- 7 1049943 work_folder/subsampled_data_1.txt
- 8 1049943 work_folder/subsampled_data_2.txt
- 9     618 work_folder/sum_stat_subsampled.txt
-10     433 work_folder/weights.txt
+ 0 2549520 result_folder_3/data_0_scored.txt
+ 1 2549520 result_folder_3/data_1_scored.txt
+ 2 2549520 result_folder_3/data_2_scored.txt
+ 3     895 result_folder_3/summary_stats.txt
+ 4    1043 result_folder_3/summary_stats_grouped_by_transition_group_id.txt
+ 0  193235 work_folder/data_0_score_data.npz
+ 1  193235 work_folder/data_1_score_data.npz
+ 2  193235 work_folder/data_2_score_data.npz
+ 3      20 work_folder/extra_group_columns.txt
+ 4    5681 work_folder/full_stat_subsampled.txt
+ 5      17 work_folder/invalid_columns.txt
+ 6     392 work_folder/score_columns.txt
+ 7 1049943 work_folder/subsampled_data_0.txt
+ 8 1049943 work_folder/subsampled_data_1.txt
+ 9 1049943 work_folder/subsampled_data_2.txt
+10     618 work_folder/sum_stat_subsampled.txt
+11     433 work_folder/weights.txt
 
-num_null   : 235.00
+num_null   : 75.00
 num_total  : 1161.00
 stats shape: (1161, 9)
 mean top target scores: 4.371650
 sdev top target scores: 1.518137
-mean top decoy  scores: 2.538528
-sdev top decoy  scores: 0.919918
+mean top decoy  scores: 0.000000
+sdev top decoy  scores: 1.000000
 
-   qvalue   svalue   TP   FP   TN   FN      FDR     sens   cutoff
-0    0.00  0.02915   27    0  235  899  0.00041  0.02916  6.13026
-1    0.01  0.86923  805    8  227  121  0.00995  0.86933  4.21220
-2    0.02  0.93044  862   17  218   64  0.01981  0.93089  3.86870
-3    0.05  1.00000  927   48  187   -1  0.04883  1.00000  3.30424
-4    0.10  1.00000  920  109  126    6  0.10628  0.99352  2.61848
-5    0.20  1.00000  873  216   19   53  0.19848  0.94276  1.24742
-6    0.30  1.00000  926  235    0    0  0.20241  1.00000 -2.10973
-7    0.40      NaN  NaN  NaN  NaN  NaN      NaN      NaN      NaN
-8    0.50      NaN  NaN  NaN  NaN  NaN      NaN      NaN      NaN
+   qvalue   svalue    TP  FP  TN    FN          FDR     sens   cutoff
+0    0.00  0.02486    27   0  75  1059  1.21855e-09  0.02486  6.13026
+1    0.01  0.99811  1084  11  64     2  1.00965e-02  0.99816  1.04761
+2    0.02  1.00000  1083  21  54     3  1.92066e-02  0.99724  0.57477
+3    0.05  1.00000  1089  60  15    -3  5.19074e-02  1.00000 -0.82467
+4    0.10  1.00000  1087  74   1    -1  6.34728e-02  1.00000 -2.10973
+5    0.20      NaN   NaN NaN NaN   NaN          NaN      NaN      NaN
+6    0.30      NaN   NaN NaN NaN   NaN          NaN      NaN      NaN
+7    0.40      NaN   NaN NaN NaN   NaN          NaN      NaN      NaN
+8    0.50      NaN   NaN NaN NaN   NaN          NaN      NaN      NaN
+
+num_null   : 25.00
+num_total  : 387.00
+stats shape: (387, 9)
+mean top target scores: 4.371650
+sdev top target scores: 1.519447
+mean top decoy  scores: 0.000000
+sdev top decoy  scores: 1.000863
+
+   qvalue   svalue   TP  FP           TN           FN          FDR     sens   cutoff
+0    0.00  0.02486    9   0  2.50000e+01  3.53000e+02  1.25971e-09  0.02486  6.13026
+1    0.01  0.99809  361   4  2.10000e+01  1.00000e+00  1.01108e-02  0.99724  1.04761
+2    0.02  1.00000  361   7  1.80000e+01  1.00000e+00  1.92180e-02  0.99724  0.57477
+3    0.05  1.00000  363  20  5.00000e+00 -1.00000e+00  5.18942e-02  1.00000 -0.82467
+4    0.10  1.00000  362  25 -3.55271e-15  3.55271e-15  6.34677e-02  1.00000 -2.10973
+5    0.20      NaN  NaN NaN          NaN          NaN          NaN      NaN      NaN
+6    0.30      NaN  NaN NaN          NaN          NaN          NaN      NaN      NaN
+7    0.40      NaN  NaN NaN          NaN          NaN          NaN      NaN      NaN
+8    0.50      NaN  NaN NaN          NaN          NaN          NaN      NaN      NaN
+
+transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peak_group_rank	d_score	m_score	transition_group_id_m_score
+
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		1	5.01248598099	4.07056575114e-08	4.16304395401e-08
+
+
+transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peak_group_rank	d_score	m_score	transition_group_id_m_score
+
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		1	5.01248598099	4.07056575114e-08	4.16304395401e-08
+
+
+transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peak_group_rank	d_score	m_score	transition_group_id_m_score
+
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		1	5.01248598099	4.07056575114e-08	4.16304395401e-08
+

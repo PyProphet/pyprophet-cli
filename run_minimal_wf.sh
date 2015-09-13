@@ -3,7 +3,8 @@
 RESULTFOLDER=results
 WORKFOLDER=results/_work
 
-pyprophet-cli prepare --data-folder tests/data --data-filename-pattern test_data.txt --work-folder $WORKFOLDER
+pyprophet-cli prepare --data-folder tests/data --data-filename-pattern test_data.txt --work-folder $WORKFOLDER \
+                      --extra-group-column transition_group_id --extra-group-column transition_group_id
 
 pyprophet-cli subsample --random-seed 43 --data-folder tests/data --data-filename-pattern test_data.txt --work-folder $WORKFOLDER --sample-factor 0.5
 

@@ -1,11 +1,12 @@
- 0  119715 work_folder/data_0_score_data.npz
- 1  119715 work_folder/data_1_score_data.npz
- 2  119715 work_folder/data_2_score_data.npz
- 3    5681 work_folder/full_stat_subsampled.txt
- 4      17 work_folder/invalid_columns.txt
- 5     392 work_folder/score_columns.txt
- 6 1049943 work_folder/subsampled_data_0.txt
- 7 1049943 work_folder/subsampled_data_1.txt
- 8 1049943 work_folder/subsampled_data_2.txt
- 9     618 work_folder/sum_stat_subsampled.txt
-10     433 work_folder/weights.txt
+ 0  193235 work_folder/data_0_score_data.npz
+ 1  193235 work_folder/data_1_score_data.npz
+ 2  193235 work_folder/data_2_score_data.npz
+ 3      20 work_folder/extra_group_columns.txt
+ 4    5681 work_folder/full_stat_subsampled.txt
+ 5      17 work_folder/invalid_columns.txt
+ 6     392 work_folder/score_columns.txt
+ 7 1049943 work_folder/subsampled_data_0.txt
+ 8 1049943 work_folder/subsampled_data_1.txt
+ 9 1049943 work_folder/subsampled_data_2.txt
+10     618 work_folder/sum_stat_subsampled.txt
+11     433 work_folder/weights.txt

@@ -49,8 +49,8 @@ def _create_run_job(name, options, job_function, help_):
     _RunWorkflow.command_name = name
     _RunWorkflow.__doc__ = help_
     _RunWorkflow.run = job_function
-
     return _RunWorkflow
+
 
 for driver in _load_drivers():
     pass

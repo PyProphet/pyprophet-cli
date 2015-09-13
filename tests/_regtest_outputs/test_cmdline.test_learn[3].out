@@ -1,11 +1,12 @@
- 0    5681 work_folder/full_stat_subsampled.txt
- 1      17 work_folder/invalid_columns.txt
- 2     392 work_folder/score_columns.txt
- 3 1049943 work_folder/subsampled_data_0.txt
- 4 1049943 work_folder/subsampled_data_1.txt
- 5 1049943 work_folder/subsampled_data_2.txt
- 6     618 work_folder/sum_stat_subsampled.txt
- 7     433 work_folder/weights.txt
+ 0      20 work_folder/extra_group_columns.txt
+ 1    5681 work_folder/full_stat_subsampled.txt
+ 2      17 work_folder/invalid_columns.txt
+ 3     392 work_folder/score_columns.txt
+ 4 1049943 work_folder/subsampled_data_0.txt
+ 5 1049943 work_folder/subsampled_data_1.txt
+ 6 1049943 work_folder/subsampled_data_2.txt
+ 7     618 work_folder/sum_stat_subsampled.txt
+ 8     433 work_folder/weights.txt
            0
 0    0.20534
 1   -0.11389

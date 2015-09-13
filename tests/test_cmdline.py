@@ -39,8 +39,8 @@ def setup(test_data_folder, request):
 
 
 def test_prepare(setup):
-    cmd = ("pyprophet-cli prepare --data-folder %s --work-folder %s" % (setup.data_folder,
-                                                                           setup.work_folder))
+    cmd = ("pyprophet-cli prepare --extra-group-column transition_group_id --data-folder %s "
+           "--work-folder %s" % (setup.data_folder, setup.work_folder))
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
 
@@ -54,7 +54,7 @@ def test_subsample(setup):
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.work_folder)
-    assert len(files) == setup.number_input_files + 1
+    assert len(files) == setup.number_input_files + 2
 
     files.sort()
     subsamples = pandas.read_csv(os.path.join(setup.work_folder, files[-1]), sep="\t")
@@ -69,7 +69,7 @@ def test_subsample(setup):
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.work_folder)
-    assert len(files) == 2 if setup.number_input_files == 1 else 3
+    assert len(files) == 3 if setup.number_input_files == 1 else 4
 
     files.sort()
     subsamples = pandas.read_csv(os.path.join(setup.work_folder, files[-1]), sep="\t")
@@ -83,7 +83,7 @@ def test_subsample(setup):
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
     files = os.listdir(setup.work_folder)
-    assert len(files) == 2 if setup.number_input_files == 1 else 3
+    assert len(files) == 3 if setup.number_input_files == 1 else 4
 
     files.sort()
 
@@ -139,3 +139,12 @@ def test_score(setup, regtest):
 
     print(file=regtest)
     print(open(os.path.join(setup.result_folder, "summary_stats.txt")).read(), file=regtest)
+    print(file=regtest)
+    print(open(os.path.join(setup.result_folder, "summary_stats_grouped_by_transition_group_id.txt")).read(), file=regtest)
+
+    for i in range(setup.number_input_files):
+        with open(os.path.join(setup.result_folder, "data_%d_scored.txt" % i)) as fp:
+            print(file=regtest)
+            print(fp.next(), file=regtest)
+            print(fp.next(), file=regtest)
+
