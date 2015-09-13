@@ -116,9 +116,18 @@ class Score(Job):
         self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
                                                 top_decoy_scores, self.lambda_)
 
-        self._dump_summary_stats()
+        self._dump_summary_stats(top_target_scores, top_decoy_scores)
 
-    def _dump_summary_stats(self):
+    def _dump_summary_stats(self, top_target_scores, top_decoy_scores):
+
+        self.logger.info("num_null   : %.2f" % self.stats.num_null)
+        self.logger.info("num_total  : %.2f" % self.stats.num_total)
+        self.logger.info("stats shape: %s" % (self.stats.df.shape,))
+        self.logger.info("mean top target scores: %3f" % np.mean(top_target_scores))
+        self.logger.info("sdev top target scores: %3f" % np.std(top_target_scores, ddof=1))
+        self.logger.info("mean top decoy  scores: %3f" % np.mean(top_decoy_scores))
+        self.logger.info("sdev top decoy  scores: %3f" % np.std(top_decoy_scores, ddof=1))
+
         summary_stats = summary_err_table(self.stats.df)
         self.logger.info("overall stat")
         for line in str(summary_stats).split("\n"):
@@ -127,6 +136,14 @@ class Score(Job):
         if self.job_count == 1:
             path = join(self.result_folder, "summary_stats.txt")
             with open(path, "w") as fp:
+                print("num_null   : %.2f" % self.stats.num_null, file=fp)
+                print("num_total  : %.2f" % self.stats.num_total, file=fp)
+                print("stats shape: %s" % (self.stats.df.shape,), file=fp)
+                print("mean top target scores: %3f" % np.mean(top_target_scores), file=fp)
+                print("sdev top target scores: %3f" % np.std(top_target_scores, ddof=1), file=fp)
+                print("mean top decoy  scores: %3f" % np.mean(top_decoy_scores), file=fp)
+                print("sdev top decoy  scores: %3f" % np.std(top_decoy_scores, ddof=1), file=fp)
+                print(file=fp)
                 summary_stats.to_string(fp)
 
     def _local_job(self, i):

@@ -1,7 +1,7 @@
  0  448091 result_folder_3/data_0_scored.txt
  1  448091 result_folder_3/data_1_scored.txt
  2  448091 result_folder_3/data_2_scored.txt
- 3     659 result_folder_3/summary_stats.txt
+ 3     856 result_folder_3/summary_stats.txt
  0  119715 work_folder/data_0_score_data.npz
  1  119715 work_folder/data_1_score_data.npz
  2  119715 work_folder/data_2_score_data.npz
@@ -13,6 +13,14 @@
  8 1049943 work_folder/subsampled_data_2.txt
  9     618 work_folder/sum_stat_subsampled.txt
 10     433 work_folder/weights.txt
+
+num_null   : 235.00
+num_total  : 1161.00
+stats shape: (1161, 9)
+mean top target scores: 4.371650
+sdev top target scores: 1.518137
+mean top decoy  scores: 2.538528
+sdev top decoy  scores: 0.919918
 
    qvalue   svalue   TP   FP   TN   FN      FDR     sens   cutoff
 0    0.00  0.02915   27    0  235  899  0.00041  0.02916  6.13026
