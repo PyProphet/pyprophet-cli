@@ -1,8 +1,9 @@
  0 2549520 result_folder_3/data_0_scored.txt
  1 2549520 result_folder_3/data_1_scored.txt
  2 2549520 result_folder_3/data_2_scored.txt
- 3     895 result_folder_3/summary_stats.txt
- 4    1043 result_folder_3/summary_stats_grouped_by_transition_group_id.txt
+ 3   28536 result_folder_3/report.pdf
+ 4     895 result_folder_3/summary_stats.txt
+ 5    1043 result_folder_3/summary_stats_grouped_by_transition_group_id.txt
  0  193235 work_folder/data_0_score_data.npz
  1  193235 work_folder/data_1_score_data.npz
  2  193235 work_folder/data_2_score_data.npz

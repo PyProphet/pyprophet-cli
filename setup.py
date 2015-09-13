@@ -23,7 +23,7 @@ setup(name='pyprophet-cli',
       ],
       zip_safe=False,
       install_requires=[
-          "pyprophet>=0.15.2",
+          "pyprophet>=0.16.0",
           "Click",
       ],
       entry_points={

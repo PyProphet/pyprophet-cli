@@ -1,6 +1,7 @@
  0 2548565 result_folder_1/data_0_scored.txt
- 1    1043 result_folder_1/summary_stats.txt
- 2    1043 result_folder_1/summary_stats_grouped_by_transition_group_id.txt
+ 1   28496 result_folder_1/report.pdf
+ 2    1043 result_folder_1/summary_stats.txt
+ 3    1043 result_folder_1/summary_stats_grouped_by_transition_group_id.txt
  0  193235 work_folder/data_0_score_data.npz
  1      20 work_folder/extra_group_columns.txt
  2    5638 work_folder/full_stat_subsampled.txt

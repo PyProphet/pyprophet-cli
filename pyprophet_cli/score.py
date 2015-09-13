@@ -12,8 +12,9 @@ import pandas as pd
 
 
 from pyprophet.optimized import find_top_ranked, rank
+from pyprophet.report import save_report
 from pyprophet.stats import (calculate_final_statistics, summary_err_table,
-                             lookup_s_and_q_values_from_error_table)
+                             lookup_s_and_q_values_from_error_table, final_err_table)
 
 from . import io, core
 
@@ -133,14 +134,24 @@ class Score(core.Job):
         self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
                                                 top_decoy_scores, self.lambda_)
 
+        if self.job_number == 1:
+            err_table = final_err_table(self.stats.df)
+            self.decoy_scores = self.d_scores[self.decoy_flags]
+            self.target_scores = self.d_scores[~self.decoy_flags]
+            self.cutoffs = err_table["cutoff"].values
+            self.svalues = err_table["svalue"].values
+            self.qvalues = err_table["qvalue"].values
+            self.top_target_scores = top_target_scores
+            self.top_decoy_scores = top_decoy_scores
+
         self._log_summary_stats(None, self.stats, top_target_scores, top_decoy_scores)
 
         self.extra_stats = []
         for name, ids in zip(self.extra_group_columns, self.extra_grouping_ids):
-            stats = self._stat_by(name, ids)
+            stats = self._compute_stat_by(name, ids)
             self.extra_stats.append(stats)
 
-    def _stat_by(self, name, ids):
+    def _compute_stat_by(self, name, ids):
         df = pd.DataFrame(dict(ids=ids, is_decoy=self.decoy_flags, scores=self.d_scores))
         decoys = df[df["is_decoy"]]
         targets = df[~df["is_decoy"]]
@@ -148,7 +159,6 @@ class Score(core.Job):
         top_target_scores = targets.groupby("ids")["scores"].max().values
         stats = calculate_final_statistics(top_target_scores, top_target_scores,
                                            top_decoy_scores, self.lambda_)
-
         self._log_summary_stats(name, stats, top_target_scores, top_decoy_scores)
         return stats
 
@@ -171,7 +181,7 @@ class Score(core.Job):
             self.logger.info(line.rstrip())
         self.logger.info("")
 
-        if self.job_count == 1:
+        if self.job_number == 1:
             if group_column is None:
                 path = join(self.result_folder, "summary_stats.txt")
             else:
@@ -186,6 +196,22 @@ class Score(core.Job):
                 print("sdev top decoy  scores: %3f" % np.std(top_decoy_scores, ddof=1), file=fp)
                 print(file=fp)
                 summary_stats.to_string(fp)
+
+            try:
+                import matplotlib
+            except ImportError:
+                self.logger.warn("!" * 80)
+                self.logger.warn("can not import matplotlib, creating report.pdf is skipped.")
+                self.logger.warn("!" * 80)
+                return
+            try:
+                # install prettier plotting styles:
+                import seaborn
+            except ImportError:
+                pass
+            path = join(self.result_folder, "report.pdf")
+            save_report(path, "", self.decoy_scores, self.target_scores, self.top_decoy_scores,
+                        self.top_target_scores, self.cutoffs, self.svalues, self.qvalues)
 
     def _local_job(self, i):
         if self.local_folder:
