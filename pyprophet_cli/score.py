@@ -113,8 +113,8 @@ class Score(Job):
         flags = find_top_ranked(target_ids, target_scores).astype(bool)
         top_target_scores = target_scores[flags]
 
-        self.stats = calculate_final_statistics(top_target_scores, target_scores, decoy_scores,
-                                                self.lambda_)
+        self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
+                                                top_decoy_scores, self.lambda_)
 
         summary_stats = summary_err_table(self.stats.df)
         self.logger.info("overall stat")
