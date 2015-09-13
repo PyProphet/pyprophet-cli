@@ -21,7 +21,7 @@ from core import Job
 from common_options import (job_number, job_count, local_folder, separator, data_folder,
                             work_folder, chunk_size, data_filename_pattern, result_folder)
 
-from constants import SCORE_DATA_FILE_ENDING
+from constants import SCORE_DATA_FILE_ENDING, SCORED_ENDING
 from exceptions import WorkflowError
 
 
@@ -49,8 +49,8 @@ class Score(Job):
     def _setup(self):
         io.setup_input_files(self, self.data_filename_pattern)
         self._load_score_data()
-        self._create_global_stats()
         self._setup_result_folder()
+        self._create_global_stats()
 
     def _setup_result_folder(self):
         if not self.overwrite_results and exists(self.result_folder):
@@ -116,10 +116,18 @@ class Score(Job):
         self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
                                                 top_decoy_scores, self.lambda_)
 
+        self._dump_summary_stats()
+
+    def _dump_summary_stats(self):
         summary_stats = summary_err_table(self.stats.df)
         self.logger.info("overall stat")
         for line in str(summary_stats).split("\n"):
             self.logger.info(line.rstrip())
+
+        if self.job_count == 1:
+            path = join(self.result_folder, "summary_stats.txt")
+            with open(path, "w") as fp:
+                summary_stats.to_string(fp)
 
     def _local_job(self, i):
         if self.local_folder:
@@ -138,11 +146,6 @@ class Score(Job):
         if not exists(score_path):
             raise WorkflowError("file %s does not exist" % score_path)
 
-        # todo
-        # fix nps file reading
-        # compute and assign peakgroup ranks !
-        # complete regression tests for apply_weights and score steps !
-
         self.logger.info("load scores %s" % score_path)
 
         npzfile = np.load(score_path)
@@ -155,7 +158,7 @@ class Score(Job):
         row_idx = 0
         score_names = None
 
-        out_path = join(self.result_folder, io.file_name_stem(in_path) + SCORE_DATA_FILE_ENDING)
+        out_path = join(self.result_folder, io.file_name_stem(in_path) + SCORED_ENDING)
 
         self.logger.info("process %s" % in_path)
         write_header = True

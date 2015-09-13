@@ -52,6 +52,9 @@ for sub_class in Job.__subclasses__():
             logger.addHandler(h)
             options["logger"] = logger
 
+            logger.info("-" * 80)
+            logger.info("RUN %s" % sub_class.command_name)
+            logger.info("-" * 80)
             for (key, value) in options.items():
                 logger.info("got setting %s=%r" % (key, value))
 
