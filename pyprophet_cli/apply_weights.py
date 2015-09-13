@@ -10,8 +10,9 @@ import pandas as pd
 from core import Job
 from common_options import (job_number, job_count, local_folder, separator, data_folder,
                             work_folder, chunk_size, data_filename_pattern)
+
 import io
-from constants import WEIGHTS_FILE_NAME, SCORE_DATA_FILE_ENDING
+from constants import WEIGHTS_FILE_NAME, SCORE_DATA_FILE_ENDING, ID_COL
 from exceptions import WorkflowError
 
 
@@ -78,7 +79,7 @@ class ApplyWeights(Job):
                     if name.startswith("main_") or name.startswith("var_"):
                         score_column_indices.append(i)
 
-            tg_ids.extend(chunk[self.ID_COL])
+            tg_ids.extend(chunk[ID_COL])
             chunk = chunk.iloc[:, score_column_indices]
             scores = chunk.dot(self.weights).astype(np.float32)
             all_scores.append(scores)

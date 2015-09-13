@@ -15,7 +15,7 @@ from common_options import (job_number, job_count, local_folder, separator, data
 
 import io
 
-from constants import SUBSAMPLED_FILES_PATTERN
+from constants import SUBSAMPLED_FILES_PATTERN, ID_COL
 from exceptions import InvalidInput
 
 
@@ -64,11 +64,11 @@ class Subsample(core.Job):
         ids = []
         overall_line_count = 0
         chunk_count = 0
-        usecols = [self.ID_COL, "decoy"]
+        usecols = [ID_COL]
         for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
                                  usecols=usecols):
             chunk_count += 1
-            ids.extend(chunk[self.ID_COL])
+            ids.extend(chunk[ID_COL])
             overall_line_count += len(chunk)
 
         self.logger.info("read %d chunks from %s" % (chunk_count, path))
@@ -121,7 +121,7 @@ class Subsample(core.Job):
             for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
                                      dtype=dtype):
                 chunk_count += 1
-                chunk = chunk[chunk[self.ID_COL].isin(sample_ids)]
+                chunk = chunk[chunk[ID_COL].isin(sample_ids)]
                 chunk.to_csv(fp, sep=self.separator, header=write_header, index=False)
                 write_header = False
 

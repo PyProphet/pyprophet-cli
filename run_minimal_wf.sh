@@ -1,3 +1,5 @@
+#!/bin/sh
+
 RESULTFOLDER=results
 WORKFOLDER=results/_work
 

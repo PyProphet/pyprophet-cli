@@ -8,7 +8,7 @@ import pandas as pd
 import io
 import core
 from common_options import data_folder, separator, data_filename_pattern, work_folder
-from constants import SCORE_COLUMNS_FILE
+from constants import SCORE_COLUMNS_FILE, ID_COL
 from exceptions import InvalidInput
 
 
@@ -35,7 +35,7 @@ class Prepare(core.Job):
         headers = set()
         for path in input_file_pathes:
             header = pd.read_csv(path, sep=self.separator, nrows=1).columns
-            expected = self.ID_COL
+            expected = ID_COL
             if header[0] != expected:
                 raise InvalidInput("first column of %s has wrong name %r. exepected %r" %
                                    (path, header[0], expected))

@@ -18,7 +18,6 @@ class JobMeta(type):
 
 class Job(object):
 
-    ID_COL = "transition_group_id"
     __metaclass__ = JobMeta
 
 
