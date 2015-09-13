@@ -6,8 +6,8 @@ import fnmatch
 
 import numpy as np
 
-from exceptions import WorkflowError
-from constants import SCORE_COLUMNS_FILE, INVALID_COLUMNS_FILE
+from .exceptions import WorkflowError
+from .constants import SCORE_COLUMNS_FILE, INVALID_COLUMNS_FILE
 
 
 join = os.path.join
@@ -55,9 +55,12 @@ def setup_dtypes(work_folder):
     return dtype
 
 
-def read_invalid_colums(work_folder):
-    columns = []
-    with open(os.path.join(work_folder, INVALID_COLUMNS_FILE), "r") as fp:
-        for line in fp:
-            columns.append(line.rstrip())
-    return columns
+def read_column_names(folder, file_name):
+    with open(os.path.join(folder, file_name), "r") as fp:
+        return [line.rstrip() for line in fp]
+
+
+def write_column_names(names, folder, file_name):
+    with open(os.path.join(folder, file_name), "w") as fp:
+        for name in names:
+            print(name, file=fp)

@@ -7,16 +7,16 @@ import string
 
 import click
 
-from version import version
+from .version import version
 
 # we import all subcommands here so that the subclases of Job are registered below !
-import prepare
-import subsample
-import learn
-import apply_weights
-import score
+from . import prepare
+from . import subsample
+from . import learn
+from . import apply_weights
+from . import score
 
-from core import Job
+from . import core
 
 
 def print_version(ctx, param, value):
@@ -35,7 +35,7 @@ def cli():
 
 levels = map(string.lower, "CRITICAL ERROR WARNING INFO DEBUG".split())
 
-for sub_class in Job.__subclasses__():
+for sub_class in core.Job.__subclasses__():
 
     def create_handler(sub_class=sub_class):
 
@@ -52,6 +52,9 @@ for sub_class in Job.__subclasses__():
             logger.addHandler(h)
             options["logger"] = logger
 
+            logger.info("-" * 80)
+            logger.info("RUN %s" % sub_class.command_name)
+            logger.info("-" * 80)
             for (key, value) in options.items():
                 logger.info("got setting %s=%r" % (key, value))
 

@@ -34,6 +34,9 @@ chunk_size = option("--chunk-size", default=100000,
                     "[default=100000]",
                     )
 
+extra_group_columns = option("--extra-group-column", "extra_group_columns", type=str, multiple=True,
+                            help="additionally compute score over this group, you may repeat this option")
+
 data_filename_pattern = option("--data-filename-pattern", default="*.txt",
                                help="glob pattern to filter files in data folder")
 

@@ -7,16 +7,18 @@ import shutil
 import numpy as np
 import pandas as pd
 
-from core import Job
-from common_options import (job_number, job_count, local_folder, separator, data_folder,
-                            work_folder, chunk_size, data_filename_pattern)
+from .common_options import (job_number, job_count, local_folder, separator, data_folder,
+                             work_folder, chunk_size, data_filename_pattern)
 
-import io
-from constants import WEIGHTS_FILE_NAME, SCORE_DATA_FILE_ENDING, ID_COL
-from exceptions import WorkflowError
+from . import io, core
+
+from .constants import (WEIGHTS_FILE_NAME, SCORE_DATA_FILE_ENDING, ID_COL, INVALID_COLUMNS_FILE,
+                       EXTRA_GROUP_COLUMNS_FILE)
+
+from .exceptions import WorkflowError
 
 
-class ApplyWeights(Job):
+class ApplyWeights(core.Job):
 
     """applies weights to given data files and writes them to WORK_FOLDER
     """
@@ -63,10 +65,14 @@ class ApplyWeights(Job):
         all_scores = []
         score_column_indices = None
         tg_ids = []
-        invalid_columns = io.read_invalid_colums(self.work_folder)
+        invalid_columns = io.read_column_names(self.work_folder, INVALID_COLUMNS_FILE)
         chunk_count = 0
 
         dtype = io.setup_dtypes(self.work_folder)
+
+        extra_group_columns = io.read_column_names(self.work_folder, EXTRA_GROUP_COLUMNS_FILE)
+
+        all_extra_ids = [[] for __ in extra_group_columns]
 
         for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
                                  dtype=dtype):
@@ -80,28 +86,40 @@ class ApplyWeights(Job):
                         score_column_indices.append(i)
 
             tg_ids.extend(chunk[ID_COL])
+            for i, extra_group_column in enumerate(extra_group_columns):
+                all_extra_ids[i].extend(chunk[extra_group_column])
+
             chunk = chunk.iloc[:, score_column_indices]
             scores = chunk.dot(self.weights).astype(np.float32)
             all_scores.append(scores)
 
         self.logger.info("read %d chunks from %s" % (chunk_count, path))
 
-        # setup dict assigning target_group_ids to increasing integer numbers:
-        tg_numeric_ids = {}
-        last_id = 0
-        for tg_id in tg_ids:
-            if tg_id not in tg_numeric_ids:
-                tg_numeric_ids[tg_id] = last_id
-                last_id += 1
+        def _assign_numeric_ids(str_ids):
+            id_map = {}
+            last_id = 0
+            for str_id in str_ids:
+                if str_id not in id_map:
+                    id_map[str_id] = last_id
+                    last_id += 1
+            return np.array(map(id_map.get, str_ids))
 
-        numeric_ids = np.array(map(tg_numeric_ids.get, tg_ids))
+        numeric_ids = _assign_numeric_ids(tg_ids)
         assert np.all(numeric_ids == sorted(numeric_ids)),\
             "incoming transition group ids are scattered over file !"
+
+        # setup dict for assigning extra_group_column integer ids:
+        extra_grouping_ids = []
+        for extra_ids in all_extra_ids:
+            extra_grouping_ids.append(_assign_numeric_ids(extra_ids))
+
+        extra_grouping_ids = np.array(extra_grouping_ids)
 
         decoy_flags = map(lambda tg_id: tg_id.startswith("DECOY_"), tg_ids)
 
         stem = io.file_name_stem(path)
         out_path = join(self.work_folder, stem + SCORE_DATA_FILE_ENDING)
         np.savez(out_path, numeric_ids=numeric_ids, decoy_flags=decoy_flags,
+                 extra_grouping_ids=extra_grouping_ids,
                  scores=np.hstack(all_scores))
         self.logger.info("wrote %s" % out_path)

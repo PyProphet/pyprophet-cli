@@ -1,36 +1,36 @@
-0    5396 full_stat_subsampled.txt
-1      17 invalid_columns.txt
-2     392 score_columns.txt
-3  211536 subsampled_data_0.txt
-4  211536 subsampled_data_1.txt
-5  211536 subsampled_data_2.txt
-6     795 sum_stat_subsampled.txt
-7     433 weights.txt
+ 0      20 work_folder/extra_group_columns.txt
+ 1    5681 work_folder/full_stat_subsampled.txt
+ 2      17 work_folder/invalid_columns.txt
+ 3     392 work_folder/score_columns.txt
+ 4 1049943 work_folder/subsampled_data_0.txt
+ 5 1049943 work_folder/subsampled_data_1.txt
+ 6 1049943 work_folder/subsampled_data_2.txt
+ 7     618 work_folder/sum_stat_subsampled.txt
+ 8     433 work_folder/weights.txt
            0
-0    0.57355
-1   -0.01553
-2   -4.41259
-3   -0.17244
-4    3.59918
-5   -1.37946
-6    0.88409
-7    0.28058
-8   -0.19711
-9   -0.05322
-10   0.06240
-11   6.14011
-12   0.59689
-13  -0.83396
-14  24.38886
-15 -14.41224
-16   0.23088
-   qvalue   svalue  TP  FP        TN        FN          FDR     sens   cutoff
-0    0.00  0.02927   3   0  26.72222  81.27778  1.21393e-06  0.03560  7.44284
-1    0.01  0.52095  44   1  25.72222  40.27778  1.11572e-02  0.52208  5.70738
-2    0.02  0.59091  50   1  25.72222  34.27778  1.51581e-02  0.59328  5.63733
-3    0.05  0.80541  68   4  22.72222  16.27778  5.11029e-02  0.80686  5.03281
-4    0.10  1.00000  85   8  18.72222  -0.72222  8.45590e-02  1.00000  2.31468
-5    0.20  1.00000  85  23   3.72222  -0.72222  2.09037e-01  1.00000  0.51744
-6    0.30  1.00000  85  26   0.72222  -0.72222  2.31425e-01  1.00000 -1.25407
-7    0.40      NaN NaN NaN       NaN       NaN          NaN      NaN      NaN
-8    0.50      NaN NaN NaN       NaN       NaN          NaN      NaN      NaN
+0    0.20534
+1   -0.11389
+2   -3.21006
+3    1.23862
+4    2.27523
+5   -2.01575
+6   -0.57766
+7  -11.21347
+8    0.11541
+9    0.00937
+10  -0.00687
+11  -8.79694
+12   0.30449
+13  -0.56113
+14   4.12507
+15   2.15173
+16   0.11774   qvalue   svalue   TP  FP        TN         FN          FDR     sens   cutoff
+0    0.00  0.01538    9   0  36.18557  539.81443  1.86051e-09  0.01640  6.33419
+1    0.01  0.98660  541   5  31.18557    7.81443  9.04299e-03  0.98576  1.49522
+2    0.02  1.00000  550  11  25.18557   -1.18557  2.00927e-02  1.00000  0.60148
+3    0.05  1.00000  552  30   6.18557   -3.18557  5.19885e-02  1.00000 -0.24675
+4    0.10  1.00000  552  33   3.18557   -3.18557  5.65949e-02  1.00000 -1.18266
+5    0.20      NaN  NaN NaN       NaN        NaN          NaN      NaN      NaN
+6    0.30      NaN  NaN NaN       NaN        NaN          NaN      NaN      NaN
+7    0.40      NaN  NaN NaN       NaN        NaN          NaN      NaN      NaN
+8    0.50      NaN  NaN NaN       NaN        NaN          NaN      NaN      NaN

@@ -8,15 +8,15 @@ import shutil
 
 import pandas as pd
 
-import core
-from common_options import (job_number, job_count, local_folder, separator, data_folder,
-                            work_folder, random_seed, chunk_size, sample_factor,
-                            data_filename_pattern)
+from . import core
+from .common_options import (job_number, job_count, local_folder, separator, data_folder,
+                             work_folder, random_seed, chunk_size, sample_factor,
+                             data_filename_pattern)
 
-import io
+from . import io
 
-from constants import SUBSAMPLED_FILES_PATTERN, ID_COL
-from exceptions import InvalidInput
+from .constants import SUBSAMPLED_FILES_PATTERN, ID_COL
+from .exceptions import InvalidInput
 
 
 class Subsample(core.Job):
