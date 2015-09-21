@@ -124,11 +124,38 @@ def test_apply_weights(setup, regtest):
     ls(setup.work_folder, regtest)
 
 
-def test_score(setup, regtest):
+def test_score_pfdr(setup, regtest):
     cmd = ("pyprophet-cli score --job-number 1 --job-count 1 "
            "--local-folder %s "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s "
+           "--result-folder %s "
+           "--work-folder %s") % (tempfile.mkdtemp(), setup.data_folder, setup.result_folder, setup.work_folder)
+    ret_code = subprocess.call(cmd, shell=True)
+    assert ret_code == 0
+
+    ls(setup.result_folder, regtest)
+    ls(setup.work_folder, regtest)
+
+    print(file=regtest)
+    print(open(os.path.join(setup.result_folder, "summary_stats.txt")).read(), file=regtest)
+    print(file=regtest)
+    print(open(os.path.join(setup.result_folder, "summary_stats_grouped_by_transition_group_id.txt")).read(), file=regtest)
+
+    for i in range(setup.number_input_files):
+        with open(os.path.join(setup.result_folder, "data_%d_scored.txt" % i)) as fp:
+            print(file=regtest)
+            print(fp.next(), file=regtest)
+            print(fp.next(), file=regtest)
+
+
+def test_score_fdr(setup, regtest):
+    cmd = ("pyprophet-cli score --job-number 1 --job-count 1 "
+           "--local-folder %s "
+           "--data-filename-pattern '*.txt' "
+           "--data-folder %s "
+           "--use-fdr "
+           "--overwrite-results "     # we run scorer a second time and write to resultfolder again
            "--result-folder %s "
            "--work-folder %s") % (tempfile.mkdtemp(), setup.data_folder, setup.result_folder, setup.work_folder)
     ret_code = subprocess.call(cmd, shell=True)

@@ -52,6 +52,7 @@ class Score(core.Job):
     options = [job_number, job_count, local_folder, separator, data_folder, work_folder,
                chunk_size, data_filename_pattern,
                result_folder,
+               click.option("--use-fdr", is_flag=True, help="use FDR, not pFDR for scoring"),
                click.option("--overwrite-results", is_flag=True),
                click.option("--lambda", "lambda_", default=0.4,
                             help="lambda value for storeys method [default=0.4]"),
@@ -132,7 +133,8 @@ class Score(core.Job):
         top_target_scores = self.d_scores[~self.decoy_flags & top_score_flags]
 
         self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
-                                                top_decoy_scores, self.lambda_)
+                                                top_decoy_scores, self.lambda_,
+                                                not self.use_fdr)
 
         if self.job_number == 1:
             err_table = final_err_table(self.stats.df)
@@ -158,7 +160,8 @@ class Score(core.Job):
         top_decoy_scores = decoys.groupby("ids")["scores"].max().values
         top_target_scores = targets.groupby("ids")["scores"].max().values
         stats = calculate_final_statistics(top_target_scores, top_target_scores,
-                                           top_decoy_scores, self.lambda_)
+                                           top_decoy_scores, self.lambda_,
+                                           not self.use_fdr)
         self._log_summary_stats(name, stats, top_target_scores, top_decoy_scores)
         return stats
 
