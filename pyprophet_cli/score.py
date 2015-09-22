@@ -220,8 +220,8 @@ class Score(core.Job):
                 err_table = final_err_table(stats.df)
                 path = join(self.result_folder, "report_grouped_by_%s.pdf" % group_column)
                 save_report(path, "", top_decoy_scores, top_target_scores, top_decoy_scores,
-                            top_target_scores, err_table["cutoff"].values, err_table["svalue"].values, err_table["qvalue"].values)
-
+                            top_target_scores, err_table["cutoff"].values,
+                            err_table["svalue"].values, err_table["qvalue"].values)
 
     def _local_job(self, i):
         if self.local_folder:
