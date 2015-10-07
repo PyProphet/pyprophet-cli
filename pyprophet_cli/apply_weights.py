@@ -13,7 +13,7 @@ from .common_options import (job_number, job_count, local_folder, separator, dat
 from . import io, core
 
 from .constants import (WEIGHTS_FILE_NAME, SCORE_DATA_FILE_ENDING, ID_COL, INVALID_COLUMNS_FILE,
-                       EXTRA_GROUP_COLUMNS_FILE)
+                       EXTRA_GROUP_COLUMNS_FILE, TOP_SCORE_DATA_FILE_ENDING)
 
 from .exceptions import WorkflowError
 
@@ -102,7 +102,7 @@ class ApplyWeights(core.Job):
                 if str_id not in id_map:
                     id_map[str_id] = last_id
                     last_id += 1
-            return np.array(map(id_map.get, str_ids))
+            return np.array(map(id_map.get, str_ids), dtype=np.int32)
 
         numeric_ids = _assign_numeric_ids(tg_ids)
         assert np.all(numeric_ids == sorted(numeric_ids)),\
@@ -113,13 +113,36 @@ class ApplyWeights(core.Job):
         for extra_ids in all_extra_ids:
             extra_grouping_ids.append(_assign_numeric_ids(extra_ids))
 
-        extra_grouping_ids = np.array(extra_grouping_ids)
-
+        # extra_grouping_ids = np.array(extra_grouping_ids)
         decoy_flags = map(lambda tg_id: tg_id.startswith("DECOY_"), tg_ids)
 
+        scores = np.hstack(all_scores)
+
+        def extract_top_scores(df):
+            decoys = df[df["decoy_flags"]]
+            targets = df[~df["decoy_flags"]]
+            tt_scores = targets.groupby("ids")["scores"].max().values
+            td_scores = decoys.groupby("ids")["scores"].max().values
+            return tt_scores, td_scores
+
+        top_scores = {}
+
+        df = pd.DataFrame(dict(scores=scores, ids=numeric_ids, decoy_flags=decoy_flags))
+        tt_scores, td_scores = extract_top_scores(df)
+        top_scores["top_target_scores"] = tt_scores
+        top_scores["top_decoy_scores"] = td_scores
+
+        for name, ids in zip(extra_group_columns, extra_grouping_ids):
+            df["ids"] = ids
+            tt_scores, td_scores = extract_top_scores(df)
+            top_scores["top_target_scores_%s" % name] = tt_scores
+            top_scores["top_decoy_scores_%s" % name] = td_scores
+
         stem = io.file_name_stem(path)
+        out_path = join(self.work_folder, stem + TOP_SCORE_DATA_FILE_ENDING)
+        np.savez(out_path, **top_scores)
+        self.logger.info("wrote %s" % out_path)
+
         out_path = join(self.work_folder, stem + SCORE_DATA_FILE_ENDING)
-        np.savez(out_path, numeric_ids=numeric_ids, decoy_flags=decoy_flags,
-                 extra_grouping_ids=extra_grouping_ids,
-                 scores=np.hstack(all_scores))
+        np.savez(out_path, scores=scores, numeric_ids=numeric_ids)
         self.logger.info("wrote %s" % out_path)

@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 SCORE_DATA_FILE_ENDING = "_score_data.npz"
+TOP_SCORE_DATA_FILE_ENDING = "_top_score_data.npz"
 SCORED_ENDING = "_scored.txt"
 
 WEIGHTS_FILE_NAME = "weights.txt"

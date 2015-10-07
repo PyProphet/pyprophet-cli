@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 
-from pyprophet.optimized import find_top_ranked, rank
+from pyprophet.optimized import rank32
 from pyprophet.report import save_report
 from pyprophet.stats import (calculate_final_statistics, summary_err_table,
                              lookup_s_and_q_values_from_error_table, final_err_table)
@@ -21,7 +21,8 @@ from . import io, core
 from .common_options import (job_number, job_count, local_folder, separator, data_folder,
                              work_folder, chunk_size, data_filename_pattern, result_folder)
 
-from .constants import SCORE_DATA_FILE_ENDING, SCORED_ENDING, EXTRA_GROUP_COLUMNS_FILE, ID_COL
+from .constants import (SCORE_DATA_FILE_ENDING, TOP_SCORE_DATA_FILE_ENDING, SCORED_ENDING,
+                        EXTRA_GROUP_COLUMNS_FILE, ID_COL)
 from .exceptions import WorkflowError
 
 
@@ -29,10 +30,8 @@ def _attach_m_scores(chunk, d_scores, stats, name):
     s, q = lookup_s_and_q_values_from_error_table(d_scores, stats.df)
     if name is None:
         chunk["m_score"] = q
-        # chunk["s_value"] = s
     else:
         chunk["%s_m_score" % name] = q
-        # chunk["%s_s_value" % name] = s
 
 
 def _filter_score_names(chunk):
@@ -84,53 +83,35 @@ class Score(core.Job):
         self.extra_group_columns = io.read_column_names(self.work_folder, EXTRA_GROUP_COLUMNS_FILE)
 
     def _load_score_data(self):
-        all_scores = []
-        all_decoy_flags = []
-        all_ids = []
-        all_extra_grouping_ids = []
-        last_max = 0
+
+        empty = np.empty(0, dtype=np.float32)
+        top_scores = {}
+
         for name in listdir(self.work_folder):
-            if name.endswith(SCORE_DATA_FILE_ENDING):
+            if name.endswith(TOP_SCORE_DATA_FILE_ENDING):
                 path = join(self.work_folder, name)
                 npzfile = np.load(path)
 
-                numeric_ids = npzfile["numeric_ids"]
-                numeric_ids += last_max
-                last_max = np.max(numeric_ids) + 1
-                all_ids.append(numeric_ids)
+                for name, scores in npzfile.items():  # works like a dict
+                    top_scores[name] = np.append(top_scores.get(name, empty), scores)
 
-                scores = npzfile["scores"]
-                all_scores.append(scores)
+        if not top_scores:
+            raise WorkflowError("no top score data found in %s" % self.work_folder)
 
-                decoy_flags = npzfile["decoy_flags"]
-                all_decoy_flags.append(decoy_flags)
-                extra_grouping_ids = npzfile["extra_grouping_ids"]
-                all_extra_grouping_ids.append(extra_grouping_ids)
-
-        if not all_scores:
-            raise WorkflowError("no score matrices found in %s" % self.work_folder)
-
-        self.scores = np.hstack(all_scores)
-        self.numeric_ids = np.hstack(all_ids)
-        self.decoy_flags = np.hstack(all_decoy_flags)
-        self.extra_grouping_ids = np.hstack(all_extra_grouping_ids)
+        self.top_scores = top_scores
 
     def _compute_global_stats(self):
 
-        assert self.numeric_ids.shape == self.scores.shape
-        top_score_flags = find_top_ranked(self.numeric_ids, self.scores).astype(bool)
-
-        top_decoy_scores = self.scores[self.decoy_flags & top_score_flags]
+        top_decoy_scores = self.top_scores["top_decoy_scores"]
+        top_target_scores = self.top_scores["top_target_scores"]
 
         mean = np.mean(top_decoy_scores)
         std_dev = np.std(top_decoy_scores, ddof=1)
         self.decoy_mean = mean
-        self.decoy_std = std_dev
+        self.decoy_std_dev = std_dev
 
-        self.d_scores = (self.scores - mean) / std_dev
-
-        top_decoy_scores = self.d_scores[self.decoy_flags & top_score_flags]
-        top_target_scores = self.d_scores[~self.decoy_flags & top_score_flags]
+        top_decoy_scores = (top_decoy_scores - mean) / std_dev
+        top_target_scores = (top_target_scores - mean) / std_dev
 
         self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
                                                 top_decoy_scores, self.lambda_,
@@ -138,8 +119,6 @@ class Score(core.Job):
 
         if self.job_number == 1:
             err_table = final_err_table(self.stats.df)
-            self.decoy_scores = self.d_scores[self.decoy_flags]
-            self.target_scores = self.d_scores[~self.decoy_flags]
             self.cutoffs = err_table["cutoff"].values
             self.svalues = err_table["svalue"].values
             self.qvalues = err_table["qvalue"].values
@@ -149,16 +128,18 @@ class Score(core.Job):
         self._log_summary_stats(None, self.stats, top_target_scores, top_decoy_scores)
 
         self.extra_stats = []
-        for name, ids in zip(self.extra_group_columns, self.extra_grouping_ids):
-            stats = self._compute_stat_by(name, ids)
+        for name in self.extra_group_columns:
+            stats = self._compute_stat_by(name)
             self.extra_stats.append(stats)
 
-    def _compute_stat_by(self, name, ids):
-        df = pd.DataFrame(dict(ids=ids, is_decoy=self.decoy_flags, scores=self.d_scores))
-        decoys = df[df["is_decoy"]]
-        targets = df[~df["is_decoy"]]
-        top_decoy_scores = decoys.groupby("ids")["scores"].max().values
-        top_target_scores = targets.groupby("ids")["scores"].max().values
+    def _compute_stat_by(self, name):
+
+        top_decoy_scores = self.top_scores["top_decoy_scores_%s" % name]
+        top_target_scores = self.top_scores["top_target_scores_%s" % name]
+
+        top_decoy_scores = (top_decoy_scores - self.decoy_mean) / self.decoy_std_dev
+        top_target_scores = (top_target_scores - self.decoy_mean) / self.decoy_std_dev
+
         stats = calculate_final_statistics(top_target_scores, top_target_scores,
                                            top_decoy_scores, self.lambda_,
                                            not self.use_fdr)
@@ -214,7 +195,7 @@ class Score(core.Job):
                 pass
             if group_column is None:
                 path = join(self.result_folder, "report.pdf")
-                save_report(path, "", self.decoy_scores, self.target_scores, self.top_decoy_scores,
+                save_report(path, "", self.top_decoy_scores, self.top_target_scores, self.top_decoy_scores,
                             self.top_target_scores, self.cutoffs, self.svalues, self.qvalues)
             else:
                 err_table = final_err_table(stats.df)
@@ -244,10 +225,10 @@ class Score(core.Job):
 
         npzfile = np.load(score_path)
         scores = npzfile["scores"]
-        scores = (scores - self.decoy_mean) / self.decoy_std
+        scores = (scores - self.decoy_mean) / self.decoy_std_dev
 
         numeric_ids = npzfile["numeric_ids"]
-        ranks = rank(numeric_ids, scores)
+        ranks = rank32(numeric_ids, scores)
 
         row_idx = 0
         score_names = None
