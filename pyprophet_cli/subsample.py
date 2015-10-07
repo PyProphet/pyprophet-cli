@@ -76,6 +76,11 @@ class Subsample(core.Job):
         line_counts = collections.Counter(ids)
 
         ids = set(ids)
+
+        if len(ids) >= 2 ** 32:
+            raise Exception("currently pyprophet can not handle 2^32 or more transition groups "
+                            "per file. (see the optimized c and the scorer code)")
+
         decoys = set(id_[6:] for id_ in ids if id_.startswith("DECOY_"))
         targets = set(id_ for id_ in ids if not id_.startswith("DECOY_"))
         valid_targets = list(decoys & targets)

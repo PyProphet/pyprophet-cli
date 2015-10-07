@@ -102,7 +102,7 @@ class ApplyWeights(core.Job):
                 if str_id not in id_map:
                     id_map[str_id] = last_id
                     last_id += 1
-            return np.array(map(id_map.get, str_ids), dtype=np.int32)
+            return np.array(map(id_map.get, str_ids), dtype=np.uint32)
 
         numeric_ids = _assign_numeric_ids(tg_ids)
         assert np.all(numeric_ids == sorted(numeric_ids)),\
