@@ -27,11 +27,13 @@ from .exceptions import WorkflowError
 
 
 def _attach_m_scores(chunk, d_scores, stats, name):
-    s, q = lookup_s_and_q_values_from_error_table(d_scores, stats.df)
+    __, q = lookup_s_and_q_values_from_error_table(d_scores, stats.df)
+    nan_count = np.sum(np.isnan(q))
     if name is None:
         chunk["m_score"] = q
     else:
         chunk["%s_m_score" % name] = q
+    return nan_count
 
 
 def _filter_score_names(chunk):
@@ -257,9 +259,13 @@ class Score(core.Job):
                 chunk["peak_group_rank"] = ranks[row_idx: row_idx + nrows]
                 chunk["d_score"] = d_scores
 
-                _attach_m_scores(chunk, d_scores, self.stats, None)
+                nan_count = _attach_m_scores(chunk, d_scores, self.stats, None)
+                if nan_count:
+                    self.logger.warn("found %d NAN in q-scores for transition groups !!" % nan_count)
                 for (name, stats) in zip(self.extra_group_columns, self.extra_stats):
-                    _attach_m_scores(chunk, d_scores, stats, name)
+                    nan_count = _attach_m_scores(chunk, d_scores, stats, name)
+                    if nan_count:
+                        self.logger.warn("found %d NAN in q-scores for %s !!" % (nan_count, name))
 
                 if self.d_score_cutoff is not None:
                     chunk = chunk[chunk["d_score"] >= self.d_score_cutoff]
