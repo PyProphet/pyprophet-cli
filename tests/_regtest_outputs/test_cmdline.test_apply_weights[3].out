@@ -1,9 +1,9 @@
- 0   73704 work_folder/data_0_score_data.npz
- 1    7082 work_folder/data_0_top_score_data.npz
- 2   73704 work_folder/data_1_score_data.npz
- 3    7082 work_folder/data_1_top_score_data.npz
- 4   73704 work_folder/data_2_score_data.npz
- 5    7082 work_folder/data_2_top_score_data.npz
+ 0   89146 work_folder/data_0_score_data.npz
+ 1 2162944 work_folder/data_0_top_score_data.hdf
+ 2   89146 work_folder/data_1_score_data.npz
+ 3 2162944 work_folder/data_1_top_score_data.hdf
+ 4   89146 work_folder/data_2_score_data.npz
+ 5 2162944 work_folder/data_2_top_score_data.hdf
  6      20 work_folder/extra_group_columns.txt
  7    5681 work_folder/full_stat_subsampled.txt
  8      17 work_folder/invalid_columns.txt

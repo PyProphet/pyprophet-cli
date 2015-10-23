@@ -90,10 +90,22 @@ class Score(core.Job):
         for name in listdir(self.work_folder):
             if name.endswith(TOP_SCORE_DATA_FILE_ENDING):
                 path = join(self.work_folder, name)
-                npzfile = np.load(path)
+                store = pd.HDFStore(path, mode="r")
 
-                for name, scores in npzfile.items():  # works like a dict
-                    top_scores[name] = np.append(top_scores.get(name, empty), scores)
+                for key in store.keys():
+                    if key not in top_scores:
+                        top_scores[key] = store[key]
+                    else:
+                        # compute new data frame by aligning current one to previous one
+                        # and computing max score over columns, then cleaning up the column
+                        # names so that the next iteration will work again:
+                        existing = top_scores[key]
+                        new = store[key]
+                        m = pd.merge(existing, new, on="ids", how="outer")
+                        m["scores"] = m[["scores_x", "scores_y"]].max(axis=1)
+                        m.drop(["scores_x", "scores_y", "decoy_flags_y"], axis=1, inplace=True)
+                        m.rename(columns=dict(decoy_flags_x="decoy_flags"), inplace=True)
+                        top_scores[key] = m
 
         if not top_scores:
             raise WorkflowError("no top score data found in %s" % self.work_folder)
@@ -102,8 +114,15 @@ class Score(core.Job):
 
     def _compute_global_stats(self):
 
-        top_decoy_scores = self.top_scores["top_decoy_scores"]
-        top_target_scores = self.top_scores["top_target_scores"]
+        """
+        todo: zu den scores noch die ids (taret_id, protein_id, ...) heraus schreiben
+        (evtl: hashen, oder mit categories ....)
+        für statistik dann die top_targets und top_decoys global bestimmen !
+        """
+
+        scores = self.top_scores["/tg_id"]
+        top_decoy_scores = scores[scores["decoy_flags"]].scores.values
+        top_target_scores = scores[~scores["decoy_flags"]].scores.values
 
         mean = np.mean(top_decoy_scores)
         std_dev = np.std(top_decoy_scores, ddof=1)
@@ -134,8 +153,9 @@ class Score(core.Job):
 
     def _compute_stat_by(self, name):
 
-        top_decoy_scores = self.top_scores["top_decoy_scores_%s" % name]
-        top_target_scores = self.top_scores["top_target_scores_%s" % name]
+        scores = self.top_scores["/%s" % name]
+        top_decoy_scores = scores[scores["decoy_flags"]].scores.values
+        top_target_scores = scores[~scores["decoy_flags"]].scores.values
 
         top_decoy_scores = (top_decoy_scores - self.decoy_mean) / self.decoy_std_dev
         top_target_scores = (top_target_scores - self.decoy_mean) / self.decoy_std_dev

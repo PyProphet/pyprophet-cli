@@ -1,5 +1,5 @@
- 0   73704 work_folder/data_0_score_data.npz
- 1    7082 work_folder/data_0_top_score_data.npz
+ 0   89146 work_folder/data_0_score_data.npz
+ 1 2162944 work_folder/data_0_top_score_data.hdf
  2      20 work_folder/extra_group_columns.txt
  3    5638 work_folder/full_stat_subsampled.txt
  4      17 work_folder/invalid_columns.txt

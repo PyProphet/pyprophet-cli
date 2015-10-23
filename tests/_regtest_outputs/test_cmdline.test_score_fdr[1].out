@@ -1,10 +1,10 @@
- 0 2548565 result_folder_1/data_0_scored.txt
- 1   28496 result_folder_1/report.pdf
- 2   28496 result_folder_1/report_grouped_by_transition_group_id.pdf
- 3    1043 result_folder_1/summary_stats.txt
- 4    1043 result_folder_1/summary_stats_grouped_by_transition_group_id.txt
- 0   73704 work_folder/data_0_score_data.npz
- 1    7082 work_folder/data_0_top_score_data.npz
+ 0 2548499 result_folder_1/data_0_scored.txt
+ 1   28564 result_folder_1/report.pdf
+ 2   28564 result_folder_1/report_grouped_by_transition_group_id.pdf
+ 3    1044 result_folder_1/summary_stats.txt
+ 4    1044 result_folder_1/summary_stats_grouped_by_transition_group_id.txt
+ 0   89146 work_folder/data_0_score_data.npz
+ 1 2162944 work_folder/data_0_top_score_data.hdf
  2      20 work_folder/extra_group_columns.txt
  3    5638 work_folder/full_stat_subsampled.txt
  4      17 work_folder/invalid_columns.txt
@@ -16,9 +16,9 @@
 num_null   : 25.00
 num_total  : 387.00
 stats shape: (387, 9)
-mean top target scores: 4.367876
+mean top target scores: 4.367875
 sdev top target scores: 1.518134
-mean top decoy  scores: 0.000000
+mean top decoy  scores: -0.000000
 sdev top decoy  scores: 1.000000
 
    qvalue   svalue   TP  FP           TN           FN          FDR     sens   cutoff
@@ -35,9 +35,9 @@ sdev top decoy  scores: 1.000000
 num_null   : 25.00
 num_total  : 387.00
 stats shape: (387, 9)
-mean top target scores: 4.367876
+mean top target scores: 4.367875
 sdev top target scores: 1.518134
-mean top decoy  scores: 0.000000
+mean top decoy  scores: -0.000000
 sdev top decoy  scores: 1.000000
 
    qvalue   svalue   TP  FP           TN           FN          FDR     sens   cutoff
@@ -53,5 +53,5 @@ sdev top decoy  scores: 1.000000
 
 transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peak_group_rank	d_score	m_score	transition_group_id_m_score
 
-459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		1	5.00816392899	4.16301091377e-08	4.16301091377e-08
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		1	5.00816392899	4.16300522943e-08	4.16300522943e-08
 
