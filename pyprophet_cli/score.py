@@ -105,6 +105,7 @@ class Score(core.Job):
                         new = store[key]
                         m = pd.merge(existing, new, on="ids", how="outer")
                         m["scores"] = m[["scores_x", "scores_y"]].max(axis=1)
+                        m["decoy_flags_x"] = m["decoy_flags_x"].fillna(m["decoy_flags_y"])
                         m.drop(["scores_x", "scores_y", "decoy_flags_y"], axis=1, inplace=True)
                         m.rename(columns=dict(decoy_flags_x="decoy_flags"), inplace=True)
                         top_scores[key] = m
