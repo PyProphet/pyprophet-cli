@@ -19,7 +19,8 @@ from pyprophet.stats import (calculate_final_statistics, summary_err_table,
 from . import io, core
 
 from .common_options import (job_number, job_count, local_folder, separator, data_folder,
-                             work_folder, chunk_size, data_filename_pattern, result_folder)
+                             work_folder, chunk_size, data_filename_pattern, result_folder,
+                             lambda_)
 
 from .constants import (SCORE_DATA_FILE_ENDING, TOP_SCORE_DATA_FILE_ENDING, SCORED_ENDING,
                         EXTRA_GROUP_COLUMNS_FILE, ID_COL)
@@ -55,8 +56,7 @@ class Score(core.Job):
                result_folder,
                click.option("--use-fdr", is_flag=True, help="use FDR, not pFDR for scoring"),
                click.option("--overwrite-results", is_flag=True),
-               click.option("--lambda", "lambda_", default=0.4,
-                            help="lambda value for storeys method [default=0.4]"),
+               lambda_,
                click.option("--d-score-cutoff", type=float, default=None,
                             help="filter output files by given d-score threshold")]
 

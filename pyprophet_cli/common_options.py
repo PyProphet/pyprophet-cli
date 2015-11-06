@@ -34,6 +34,9 @@ chunk_size = option("--chunk-size", default=100000,
                     "[default=100000]",
                     )
 
+lambda_ = option("--lambda", "lambda_", default=0.4,
+                 help="lambda value for storeys method [default=0.4]")
+
 extra_group_columns = option("--extra-group-column", "extra_group_columns", type=str, multiple=True,
                             help="additionally compute score over this group, you may repeat this option")
 
