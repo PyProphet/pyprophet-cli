@@ -23,7 +23,7 @@ setup(name='pyprophet-cli',
       ],
       zip_safe=False,
       install_requires=[
-          "pyprophet>=0.18.3",
+          "pyprophet>=0.19.0",
           "Click",
           "tables",
       ],

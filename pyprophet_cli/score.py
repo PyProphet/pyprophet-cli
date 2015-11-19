@@ -14,7 +14,8 @@ import pandas as pd
 from pyprophet.optimized import rank32
 from pyprophet.report import save_report
 from pyprophet.stats import (calculate_final_statistics, summary_err_table,
-                             lookup_s_and_q_values_from_error_table, final_err_table)
+                             lookup_s_and_q_values_from_error_table, final_err_table,
+                             lookup_p_values_from_error_table)
 
 from . import io, core
 
@@ -35,6 +36,14 @@ def _attach_m_scores(chunk, d_scores, stats, name):
     else:
         chunk["%s_m_score" % name] = q
     return nan_count
+
+
+def _attach_p_values(chunk, d_scores, stats, name):
+    p = lookup_p_values_from_error_table(d_scores, stats.df)
+    if name is None:
+        chunk["p_value"] = p
+    else:
+        chunk["%s_p_value" % name] = p
 
 
 def _filter_score_names(chunk):
@@ -144,6 +153,7 @@ class Score(core.Job):
             self.cutoffs = err_table["cutoff"].values
             self.svalues = err_table["svalue"].values
             self.qvalues = err_table["qvalue"].values
+            self.pvalues = err_table["pvalue"].values
             self.top_target_scores = top_target_scores
             self.top_decoy_scores = top_decoy_scores
 
@@ -219,13 +229,16 @@ class Score(core.Job):
             if group_column is None:
                 path = join(self.result_folder, "report.pdf")
                 save_report(path, "", self.top_decoy_scores, self.top_target_scores, self.top_decoy_scores,
-                            self.top_target_scores, self.cutoffs, self.svalues, self.qvalues)
+                            self.top_target_scores, self.cutoffs, self.svalues, self.qvalues,
+                            self.pvalues, self.lambda_)
             else:
                 err_table = final_err_table(stats.df)
                 path = join(self.result_folder, "report_grouped_by_%s.pdf" % group_column)
                 save_report(path, "", top_decoy_scores, top_target_scores, top_decoy_scores,
                             top_target_scores, err_table["cutoff"].values,
-                            err_table["svalue"].values, err_table["qvalue"].values)
+                            err_table["svalue"].values, err_table["qvalue"].values,
+                            err_table["pvalue"].values, self.lambda_
+                            )
 
     def _local_job(self, i):
         if self.local_folder:
@@ -283,10 +296,13 @@ class Score(core.Job):
                 nan_count = _attach_m_scores(chunk, d_scores, self.stats, None)
                 if nan_count:
                     self.logger.warn("found %d NAN in q-scores for transition groups !!" % nan_count)
+                _attach_p_values(chunk, d_scores, self.stats, None)
+
                 for (name, stats) in zip(self.extra_group_columns, self.extra_stats):
                     nan_count = _attach_m_scores(chunk, d_scores, stats, name)
                     if nan_count:
                         self.logger.warn("found %d NAN in q-scores for %s !!" % (nan_count, name))
+                    _attach_p_values(chunk, d_scores, self.stats, name)
 
                 if self.d_score_cutoff is not None:
                     chunk = chunk[chunk["d_score"] >= self.d_score_cutoff]
