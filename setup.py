@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from distutils.extension import Extension
 
 
-version = (0, 0, 15)
+version = (0, 0, 16)
 
 setup(name='pyprophet-cli',
       version="%d.%d.%d" % version,
