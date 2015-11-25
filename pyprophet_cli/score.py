@@ -25,6 +25,7 @@ from .common_options import (job_number, job_count, local_folder, separator, dat
 
 from .constants import (SCORE_DATA_FILE_ENDING, TOP_SCORE_DATA_FILE_ENDING, SCORED_ENDING,
                         EXTRA_GROUP_COLUMNS_FILE, ID_COL)
+
 from .exceptions import WorkflowError
 
 
@@ -54,26 +55,7 @@ def _filter_score_names(chunk):
         return score_names
 
 
-class Score(core.Job):
-
-    """applies weights to given data files and writes them to WORK_FOLDER
-    """
-
-    command_name = "score"
-    options = [job_number, job_count, local_folder, separator, data_folder, work_folder,
-               chunk_size, data_filename_pattern,
-               result_folder,
-               click.option("--use-fdr", is_flag=True, help="use FDR, not pFDR for scoring"),
-               click.option("--overwrite-results", is_flag=True),
-               lambda_,
-               click.option("--d-score-cutoff", type=float, default=None,
-                            help="filter output files by given d-score threshold")]
-
-    def run(self):
-        """run processing step from commandline"""
-        self._setup()
-        for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
-            self._local_job(i)
+class _Scorer(object):
 
     def _setup(self):
         io.setup_input_files(self, self.data_filename_pattern)
@@ -93,6 +75,18 @@ class Score(core.Job):
     def _load_extra_score_columns(self):
         self.extra_group_columns = io.read_column_names(self.work_folder, EXTRA_GROUP_COLUMNS_FILE)
 
+    def _load_score_data_local(self, i):
+        empty = np.empty(0, dtype=np.float32)
+        top_scores = {}
+
+        in_path = self._pathes_of_files_for_processing[i]
+        path = join(self.work_folder, io.file_name_stem(in_path) + TOP_SCORE_DATA_FILE_ENDING)
+        store = pd.HDFStore(path, mode="r")
+        for key in store.keys():
+            if key not in top_scores:
+                top_scores[key] = store[key]
+        self.top_scores = top_scores
+
     def _load_score_data(self):
 
         empty = np.empty(0, dtype=np.float32)
@@ -110,14 +104,20 @@ class Score(core.Job):
                         # compute new data frame by aligning current one to previous one
                         # and computing max score over columns, then cleaning up the column
                         # names so that the next iteration will work again:
-                        existing = top_scores[key]
-                        new = store[key]
-                        m = pd.merge(existing, new, on="ids", how="outer")
-                        m["scores"] = m[["scores_x", "scores_y"]].max(axis=1)
-                        m["decoy_flags_x"] = m["decoy_flags_x"].fillna(m["decoy_flags_y"])
-                        m.drop(["scores_x", "scores_y", "decoy_flags_y"], axis=1, inplace=True)
-                        m.rename(columns=dict(decoy_flags_x="decoy_flags"), inplace=True)
-                        top_scores[key] = m
+                        if self.statistics_mode == "global":
+                            # we determine top target transistion over all runs:
+                            existing = top_scores[key]
+                            new = store[key]
+                            m = pd.merge(existing, new, on="ids", how="outer")
+                            m["scores"] = m[["scores_x", "scores_y"]].max(axis=1)
+                            m["decoy_flags_x"] = m["decoy_flags_x"].fillna(m["decoy_flags_y"])
+                            m.drop(["scores_x", "scores_y", "decoy_flags_y"], axis=1, inplace=True)
+                            m.rename(columns=dict(decoy_flags_x="decoy_flags"), inplace=True)
+                            top_scores[key] = m
+                        elif self.statistics_mode == "inbetween":
+                            existing = top_scores[key]
+                            new = store[key]
+                            top_scores[key] = pd.concat((top_scores[key], store[key]))
 
         if not top_scores:
             raise WorkflowError("no top score data found in %s" % self.work_folder)
@@ -315,3 +315,35 @@ class Score(core.Job):
             self.logger.info("processed %d chunks from %s" % (chunk_count, in_path))
 
         self.logger.info("wrote %s" % out_path)
+
+
+class _GlobalScorer(_Scorer):
+
+    def _run(self):
+        self._setup()
+        for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
+            self._local_job(i)
+
+
+class Score(core.Job):
+
+    """applies weights to given data files and writes them to WORK_FOLDER
+    """
+
+    command_name = "score"
+    options = [job_number, job_count, local_folder, separator, data_folder, work_folder,
+               chunk_size, data_filename_pattern,
+               result_folder,
+               click.option("--use-fdr", is_flag=True, help="use FDR, not pFDR for scoring"),
+               click.option("--overwrite-results", is_flag=True),
+               lambda_,
+               click.option("--d-score-cutoff", type=float, default=None,
+                            help="filter output files by given d-score threshold"),
+               click.option("--statistics-mode", type=click.Choice(['local', 'global', 'inbetween']))]
+
+    def run(self):
+        """run processing step from commandline"""
+        self.__class__ = _GlobalScorer
+        self._run()
+
+
