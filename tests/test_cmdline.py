@@ -126,6 +126,7 @@ def test_apply_weights(setup, regtest):
 
 def test_score_pfdr(setup, regtest):
     cmd = ("pyprophet-cli score --job-number 1 --job-count 1 "
+           "--statistics-mode global "
            "--local-folder %s "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s "
@@ -151,6 +152,7 @@ def test_score_pfdr(setup, regtest):
 
 def test_score_fdr(setup, regtest):
     cmd = ("pyprophet-cli score --job-number 1 --job-count 1 "
+           "--statistics-mode global "
            "--local-folder %s "
            "--data-filename-pattern '*.txt' "
            "--data-folder %s "

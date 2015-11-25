@@ -26,7 +26,7 @@ from .common_options import (job_number, job_count, local_folder, separator, dat
 from .constants import (SCORE_DATA_FILE_ENDING, TOP_SCORE_DATA_FILE_ENDING, SCORED_ENDING,
                         EXTRA_GROUP_COLUMNS_FILE, ID_COL)
 
-from .exceptions import WorkflowError
+from .exceptions import WorkflowError, CommandLineError
 
 
 def _attach_m_scores(chunk, d_scores, stats, name):
@@ -60,9 +60,7 @@ class _Scorer(object):
     def _setup(self):
         io.setup_input_files(self, self.data_filename_pattern)
         self._load_extra_score_columns()
-        self._load_score_data()
         self._setup_result_folder()
-        self._compute_global_stats()
 
     def _setup_result_folder(self):
         if not self.overwrite_results and exists(self.result_folder):
@@ -76,7 +74,6 @@ class _Scorer(object):
         self.extra_group_columns = io.read_column_names(self.work_folder, EXTRA_GROUP_COLUMNS_FILE)
 
     def _load_score_data_local(self, i):
-        empty = np.empty(0, dtype=np.float32)
         top_scores = {}
 
         in_path = self._pathes_of_files_for_processing[i]
@@ -86,159 +83,6 @@ class _Scorer(object):
             if key not in top_scores:
                 top_scores[key] = store[key]
         self.top_scores = top_scores
-
-    def _load_score_data(self):
-
-        empty = np.empty(0, dtype=np.float32)
-        top_scores = {}
-
-        for name in listdir(self.work_folder):
-            if name.endswith(TOP_SCORE_DATA_FILE_ENDING):
-                path = join(self.work_folder, name)
-                store = pd.HDFStore(path, mode="r")
-
-                for key in store.keys():
-                    if key not in top_scores:
-                        top_scores[key] = store[key]
-                    else:
-                        # compute new data frame by aligning current one to previous one
-                        # and computing max score over columns, then cleaning up the column
-                        # names so that the next iteration will work again:
-                        if self.statistics_mode == "global":
-                            # we determine top target transistion over all runs:
-                            existing = top_scores[key]
-                            new = store[key]
-                            m = pd.merge(existing, new, on="ids", how="outer")
-                            m["scores"] = m[["scores_x", "scores_y"]].max(axis=1)
-                            m["decoy_flags_x"] = m["decoy_flags_x"].fillna(m["decoy_flags_y"])
-                            m.drop(["scores_x", "scores_y", "decoy_flags_y"], axis=1, inplace=True)
-                            m.rename(columns=dict(decoy_flags_x="decoy_flags"), inplace=True)
-                            top_scores[key] = m
-                        elif self.statistics_mode == "inbetween":
-                            existing = top_scores[key]
-                            new = store[key]
-                            top_scores[key] = pd.concat((top_scores[key], store[key]))
-
-        if not top_scores:
-            raise WorkflowError("no top score data found in %s" % self.work_folder)
-
-        self.top_scores = top_scores
-
-    def _compute_global_stats(self):
-
-        """
-        todo: zu den scores noch die ids (taret_id, protein_id, ...) heraus schreiben
-        (evtl: hashen, oder mit categories ....)
-        für statistik dann die top_targets und top_decoys global bestimmen !
-        """
-
-        scores = self.top_scores["/tg_id"]
-        top_decoy_scores = scores[scores["decoy_flags"]].scores.values
-        top_target_scores = scores[~scores["decoy_flags"]].scores.values
-
-        mean = np.mean(top_decoy_scores)
-        std_dev = np.std(top_decoy_scores, ddof=1)
-        self.decoy_mean = mean
-        self.decoy_std_dev = std_dev
-
-        top_decoy_scores = (top_decoy_scores - mean) / std_dev
-        top_target_scores = (top_target_scores - mean) / std_dev
-
-        self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
-                                                top_decoy_scores, self.lambda_,
-                                                not self.use_fdr)
-
-        if self.job_number == 1:
-            err_table = final_err_table(self.stats.df)
-            self.cutoffs = err_table["cutoff"].values
-            self.svalues = err_table["svalue"].values
-            self.qvalues = err_table["qvalue"].values
-            self.pvalues = err_table["pvalue"].values
-            self.top_target_scores = top_target_scores
-            self.top_decoy_scores = top_decoy_scores
-
-        self._log_summary_stats(None, self.stats, top_target_scores, top_decoy_scores)
-
-        self.extra_stats = []
-        for name in self.extra_group_columns:
-            stats = self._compute_stat_by(name)
-            self.extra_stats.append(stats)
-
-    def _compute_stat_by(self, name):
-
-        scores = self.top_scores["/%s" % name]
-        top_decoy_scores = scores[scores["decoy_flags"]].scores.values
-        top_target_scores = scores[~scores["decoy_flags"]].scores.values
-
-        top_decoy_scores = (top_decoy_scores - self.decoy_mean) / self.decoy_std_dev
-        top_target_scores = (top_target_scores - self.decoy_mean) / self.decoy_std_dev
-
-        stats = calculate_final_statistics(top_target_scores, top_target_scores,
-                                           top_decoy_scores, self.lambda_,
-                                           not self.use_fdr)
-        self._log_summary_stats(name, stats, top_target_scores, top_decoy_scores)
-        return stats
-
-    def _log_summary_stats(self, group_column, stats, top_target_scores, top_decoy_scores):
-
-        self.logger.info("")
-        self.logger.info("STATS WHEN GROUPED BY %s" % (group_column or ID_COL))
-        self.logger.info("")
-        self.logger.info("num_null   : %.2f" % stats.num_null)
-        self.logger.info("num_total  : %.2f" % stats.num_total)
-        self.logger.info("stats shape: %s" % (stats.df.shape,))
-        self.logger.info("mean top target scores: %3f" % np.mean(top_target_scores))
-        self.logger.info("sdev top target scores: %3f" % np.std(top_target_scores, ddof=1))
-        self.logger.info("mean top decoy  scores: %3f" % np.mean(top_decoy_scores))
-        self.logger.info("sdev top decoy  scores: %3f" % np.std(top_decoy_scores, ddof=1))
-
-        summary_stats = summary_err_table(stats.df)
-        self.logger.info("")
-        for line in str(summary_stats).split("\n"):
-            self.logger.info(line.rstrip())
-        self.logger.info("")
-
-        if self.job_number == 1:
-            if group_column is None:
-                path = join(self.result_folder, "summary_stats.txt")
-            else:
-                path = join(self.result_folder, "summary_stats_grouped_by_%s.txt" % group_column)
-            with open(path, "w") as fp:
-                print("num_null   : %.2f" % stats.num_null, file=fp)
-                print("num_total  : %.2f" % stats.num_total, file=fp)
-                print("stats shape: %s" % (stats.df.shape,), file=fp)
-                print("mean top target scores: %3f" % np.mean(top_target_scores), file=fp)
-                print("sdev top target scores: %3f" % np.std(top_target_scores, ddof=1), file=fp)
-                print("mean top decoy  scores: %3f" % np.mean(top_decoy_scores), file=fp)
-                print("sdev top decoy  scores: %3f" % np.std(top_decoy_scores, ddof=1), file=fp)
-                print(file=fp)
-                summary_stats.to_string(fp)
-
-            try:
-                import matplotlib
-            except ImportError:
-                self.logger.warn("!" * 80)
-                self.logger.warn("can not import matplotlib, creating report.pdf is skipped.")
-                self.logger.warn("!" * 80)
-                return
-            try:
-                # install prettier plotting styles:
-                import seaborn
-            except ImportError:
-                pass
-            if group_column is None:
-                path = join(self.result_folder, "report.pdf")
-                save_report(path, "", self.top_decoy_scores, self.top_target_scores, self.top_decoy_scores,
-                            self.top_target_scores, self.cutoffs, self.svalues, self.qvalues,
-                            self.pvalues, self.lambda_)
-            else:
-                err_table = final_err_table(stats.df)
-                path = join(self.result_folder, "report_grouped_by_%s.pdf" % group_column)
-                save_report(path, "", top_decoy_scores, top_target_scores, top_decoy_scores,
-                            top_target_scores, err_table["cutoff"].values,
-                            err_table["svalue"].values, err_table["qvalue"].values,
-                            err_table["pvalue"].values, self.lambda_
-                            )
 
     def _local_job(self, i):
         if self.local_folder:
@@ -316,13 +160,222 @@ class _Scorer(object):
 
         self.logger.info("wrote %s" % out_path)
 
+    def _compute_stats(self):
+
+        scores = self.top_scores["/tg_id"]
+        top_decoy_scores = scores[scores["decoy_flags"]].scores.values
+        top_target_scores = scores[~scores["decoy_flags"]].scores.values
+
+        mean = np.mean(top_decoy_scores)
+        std_dev = np.std(top_decoy_scores, ddof=1)
+        self.decoy_mean = mean
+        self.decoy_std_dev = std_dev
+
+        top_decoy_scores = (top_decoy_scores - mean) / std_dev
+        top_target_scores = (top_target_scores - mean) / std_dev
+
+        self.stats = calculate_final_statistics(top_target_scores, top_target_scores,
+                                                top_decoy_scores, self.lambda_,
+                                                not self.use_fdr)
+
+        err_table = final_err_table(self.stats.df)
+        self.cutoffs = err_table["cutoff"].values
+        self.svalues = err_table["svalue"].values
+        self.qvalues = err_table["qvalue"].values
+        self.pvalues = err_table["pvalue"].values
+        self.top_target_scores = top_target_scores
+        self.top_decoy_scores = top_decoy_scores
+
+        self._report_results(None, self.stats, top_target_scores, top_decoy_scores)
+
+        self.extra_stats = []
+        for name in self.extra_group_columns:
+            stats = self._compute_stat_by(name)
+            self.extra_stats.append(stats)
+
+    def _compute_stat_by(self, name):
+
+        scores = self.top_scores["/%s" % name]
+        top_decoy_scores = scores[scores["decoy_flags"]].scores.values
+        top_target_scores = scores[~scores["decoy_flags"]].scores.values
+
+        top_decoy_scores = (top_decoy_scores - self.decoy_mean) / self.decoy_std_dev
+        top_target_scores = (top_target_scores - self.decoy_mean) / self.decoy_std_dev
+
+        stats = calculate_final_statistics(top_target_scores, top_target_scores,
+                                           top_decoy_scores, self.lambda_,
+                                           not self.use_fdr)
+        self._report_results(name, stats, top_target_scores, top_decoy_scores)
+        return stats
+
+    def _report_results(self, group_column, stats, top_target_scores, top_decoy_scores):
+
+        self._log_header(group_column, stats, top_target_scores, top_decoy_scores)
+        summary_stats = self._log_summary_stats(stats)
+
+        if self.job_number == 1:
+            self._write_reports(stats, summary_stats, group_column, top_target_scores, top_decoy_scores)
+
+    def _log_header(self, group_column, stats, top_target_scores, top_decoy_scores):
+
+        self.logger.info("")
+        self.logger.info("STATS WHEN GROUPED BY %s" % (group_column or ID_COL))
+        self.logger.info("")
+        self.logger.info("num_null   : %.2f" % stats.num_null)
+        self.logger.info("num_total  : %.2f" % stats.num_total)
+        self.logger.info("stats shape: %s" % (stats.df.shape,))
+        self.logger.info("mean top target scores: %3f" % np.mean(top_target_scores))
+        self.logger.info("sdev top target scores: %3f" % np.std(top_target_scores, ddof=1))
+        self.logger.info("mean top decoy  scores: %3f" % np.mean(top_decoy_scores))
+        self.logger.info("sdev top decoy  scores: %3f" % np.std(top_decoy_scores, ddof=1))
+
+    def _log_summary_stats(self, stats):
+
+        summary_stats = summary_err_table(stats.df)
+        self.logger.info("")
+        for line in str(summary_stats).split("\n"):
+            self.logger.info(line.rstrip())
+        self.logger.info("")
+        return summary_stats
+
+    def _write_reports(self, stats, summary_stats, group_column, top_target_scores, top_decoy_scores, title=None):
+
+        if title is None:
+            postfix = ""
+            infix = "_"
+        else:
+            postfix = "_%s" % title
+            infix = "_%s_" % title
+
+        if group_column is None:
+            path = join(self.result_folder, "summary_stats%s.txt" % postfix)
+        else:
+            path = join(self.result_folder, "summary_stats%sgrouped_by_%s.txt" % (infix, group_column))
+
+        with open(path, "w") as fp:
+            print("num_null   : %.2f" % stats.num_null, file=fp)
+            print("num_total  : %.2f" % stats.num_total, file=fp)
+            print("stats shape: %s" % (stats.df.shape,), file=fp)
+            print("mean top target scores: %3f" % np.mean(top_target_scores), file=fp)
+            print("sdev top target scores: %3f" % np.std(top_target_scores, ddof=1), file=fp)
+            print("mean top decoy  scores: %3f" % np.mean(top_decoy_scores), file=fp)
+            print("sdev top decoy  scores: %3f" % np.std(top_decoy_scores, ddof=1), file=fp)
+            print(file=fp)
+            summary_stats.to_string(fp)
+
+        try:
+            import matplotlib
+        except ImportError:
+            self.logger.warn("!" * 80)
+            self.logger.warn("can not import matplotlib, creating report.pdf is skipped.")
+            self.logger.warn("!" * 80)
+            return
+        try:
+            # install prettier plotting styles:
+            import seaborn
+        except ImportError:
+            pass
+
+        if group_column is None:
+            path = join(self.result_folder, "report%s.pdf" % postfix)
+            save_report(path, "", self.top_decoy_scores, self.top_target_scores, self.top_decoy_scores,
+                        self.top_target_scores, self.cutoffs, self.svalues, self.qvalues,
+                        self.pvalues, self.lambda_)
+        else:
+            err_table = final_err_table(stats.df)
+            path = join(self.result_folder, "report%sgrouped_by_%s.pdf" % (infix, group_column))
+            save_report(path, "", top_decoy_scores, top_target_scores, top_decoy_scores,
+                        top_target_scores, err_table["cutoff"].values,
+                        err_table["svalue"].values, err_table["qvalue"].values,
+                        err_table["pvalue"].values, self.lambda_
+                        )
+
 
 class _GlobalScorer(_Scorer):
+
+    def _setup(self):
+        super(_GlobalScorer, self)._setup()
+        self._load_score_data()
+        self._compute_stats()
 
     def _run(self):
         self._setup()
         for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
             self._local_job(i)
+
+    def _load_score_data(self):
+
+        top_scores = {}
+        for name in listdir(self.work_folder):
+            if name.endswith(TOP_SCORE_DATA_FILE_ENDING):
+                path = join(self.work_folder, name)
+                store = pd.HDFStore(path, mode="r")
+
+                for key in store.keys():
+                    if key not in top_scores:
+                        top_scores[key] = store[key]
+                    else:
+                        top_scores[key] = self._merge_score_frames(top_scores[key], store[key])
+
+        if not top_scores:
+            raise WorkflowError("no top score data found in %s" % self.work_folder)
+
+        self.top_scores = top_scores
+
+
+class _GlobalGlobalScorer(_GlobalScorer):
+
+    def _merge_score_frames(self, existing, new):
+        m = pd.merge(existing, new, on="ids", how="outer")
+        m["scores"] = m[["scores_x", "scores_y"]].max(axis=1)
+        m["decoy_flags_x"] = m["decoy_flags_x"].fillna(m["decoy_flags_y"])
+        m.drop(["scores_x", "scores_y", "decoy_flags_y"], axis=1, inplace=True)
+        m.rename(columns=dict(decoy_flags_x="decoy_flags"), inplace=True)
+        return m
+
+
+class _LocalGlobalScorer(_GlobalScorer):
+
+    def _merge_score_frames(self, existing, new):
+        return pd.concat((existing, new))
+
+
+class _LocalScorer(_Scorer):
+
+    def _run(self):
+        self._setup()
+        io.setup_input_files(self, self.data_filename_pattern)
+        self._load_extra_score_columns()
+
+        for i in xrange(self.job_number - 1, len(self.input_file_pathes), self.job_count):
+            self._local_job(i)
+
+    def _local_job(self, i):
+        if self.local_folder:
+            self._copy_to_local(i)
+        self._load_score_data_local(i)
+        self._compute_stats()
+        self._score(i)
+
+    def _load_score_data_local(self, i):
+        top_scores = {}
+
+        in_path = self._pathes_of_files_for_processing[i]
+        path = join(self.work_folder, io.file_name_stem(in_path) + TOP_SCORE_DATA_FILE_ENDING)
+        store = pd.HDFStore(path, mode="r")
+        for key in store.keys():
+            if key not in top_scores:
+                top_scores[key] = store[key]
+        self.top_scores = top_scores
+
+    def _report_results(self, group_column, stats, top_target_scores, top_decoy_scores):
+
+        stem = io.file_name_stem(self.input_file_pathes[i])
+        self.logger.info("STATS FOR SCORING %s" % stem)
+
+        self._log_header(group_column, stats, top_target_scores, top_decoy_scores)
+        summary_stats = self._log_summary_stats(stats)
+        self._write_reports(stats, summary_stats, group_column, top_target_scores, top_decoy_scores, stem)
 
 
 class Score(core.Job):
@@ -343,7 +396,13 @@ class Score(core.Job):
 
     def run(self):
         """run processing step from commandline"""
-        self.__class__ = _GlobalScorer
+
+        if self.statistics_mode is None:
+            raise CommandLineError("--statistics-mode option must be set !")
+
+        # we switch the class, this means: all attributes are kept, but the methods after
+        # this assignment will change:
+        self.__class__ = {"local": _LocalScorer,
+                          "global": _GlobalGlobalScorer,
+                          "inbetween": _LocalGlobalScorer}[self.statistics_mode]
         self._run()
-
-
