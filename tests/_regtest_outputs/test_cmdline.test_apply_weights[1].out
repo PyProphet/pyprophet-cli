@@ -1,9 +1,9 @@
  0   89146 work_folder/data_0_score_data.npz
- 1 2162944 work_folder/data_0_top_score_data.hdf
+ 1 2162728 work_folder/data_0_top_score_data.hdf
  2      20 work_folder/extra_group_columns.txt
- 3    5638 work_folder/full_stat_subsampled.txt
+ 3    6460 work_folder/full_stat_subsampled.txt
  4      17 work_folder/invalid_columns.txt
  5     392 work_folder/score_columns.txt
  6 1049943 work_folder/subsampled_data_0.txt
- 7     615 work_folder/sum_stat_subsampled.txt
+ 7     706 work_folder/sum_stat_subsampled.txt
  8     433 work_folder/weights.txt
