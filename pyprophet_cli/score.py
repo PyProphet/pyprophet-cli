@@ -160,7 +160,7 @@ class _Scorer(object):
 
         self.logger.info("wrote %s" % out_path)
 
-    def _compute_stats(self):
+    def _compute_stats(self, i):
 
         scores = self.top_scores["/tg_id"]
         top_decoy_scores = scores[scores["decoy_flags"]].scores.values
@@ -186,14 +186,14 @@ class _Scorer(object):
         self.top_target_scores = top_target_scores
         self.top_decoy_scores = top_decoy_scores
 
-        self._report_results(None, self.stats, top_target_scores, top_decoy_scores)
+        self._report_results(i, None, self.stats, top_target_scores, top_decoy_scores)
 
         self.extra_stats = []
         for name in self.extra_group_columns:
-            stats = self._compute_stat_by(name)
+            stats = self._compute_stat_by(i, name)
             self.extra_stats.append(stats)
 
-    def _compute_stat_by(self, name):
+    def _compute_stat_by(self, i, name):
 
         scores = self.top_scores["/%s" % name]
         top_decoy_scores = scores[scores["decoy_flags"]].scores.values
@@ -205,10 +205,10 @@ class _Scorer(object):
         stats = calculate_final_statistics(top_target_scores, top_target_scores,
                                            top_decoy_scores, self.lambda_,
                                            not self.use_fdr)
-        self._report_results(name, stats, top_target_scores, top_decoy_scores)
+        self._report_results(i, name, stats, top_target_scores, top_decoy_scores)
         return stats
 
-    def _report_results(self, group_column, stats, top_target_scores, top_decoy_scores):
+    def _report_results(self, i, group_column, stats, top_target_scores, top_decoy_scores):
 
         self._log_header(group_column, stats, top_target_scores, top_decoy_scores)
         summary_stats = self._log_summary_stats(stats)
@@ -296,7 +296,7 @@ class _GlobalScorer(_Scorer):
     def _setup(self):
         super(_GlobalScorer, self)._setup()
         self._load_score_data()
-        self._compute_stats()
+        self._compute_stats(None)
 
     def _run(self):
         self._setup()
@@ -354,7 +354,7 @@ class _LocalScorer(_Scorer):
         if self.local_folder:
             self._copy_to_local(i)
         self._load_score_data_local(i)
-        self._compute_stats()
+        self._compute_stats(i)
         self._score(i)
 
     def _load_score_data_local(self, i):
@@ -368,7 +368,7 @@ class _LocalScorer(_Scorer):
                 top_scores[key] = store[key]
         self.top_scores = top_scores
 
-    def _report_results(self, group_column, stats, top_target_scores, top_decoy_scores):
+    def _report_results(self, i, group_column, stats, top_target_scores, top_decoy_scores):
 
         stem = io.file_name_stem(self.input_file_pathes[i])
         self.logger.info("STATS FOR SCORING %s" % stem)
@@ -392,7 +392,7 @@ class Score(core.Job):
                lambda_,
                click.option("--d-score-cutoff", type=float, default=None,
                             help="filter output files by given d-score threshold"),
-               click.option("--statistics-mode", type=click.Choice(['local', 'global', 'inbetween']))]
+               click.option("--statistics-mode", type=click.Choice(['local', 'global', 'local-global']))]
 
     def run(self):
         """run processing step from commandline"""
@@ -404,5 +404,5 @@ class Score(core.Job):
         # this assignment will change:
         self.__class__ = {"local": _LocalScorer,
                           "global": _GlobalGlobalScorer,
-                          "inbetween": _LocalGlobalScorer}[self.statistics_mode]
+                          "local-global": _LocalGlobalScorer}[self.statistics_mode]
         self._run()
