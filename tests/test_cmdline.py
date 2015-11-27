@@ -46,7 +46,7 @@ def setup(test_data_folder, request, tmpdir):
 
 
 def _prepare(setup, regtest):
-    cmd = ("pyprophet-cli prepare --extra-group-column transition_group_id --data-folder %s "
+    cmd = ("pyprophet-cli prepare --extra-group-column peptide_id --data-folder %s "
            "--work-folder %s" % (setup.data_folder, setup.work_folder))
     ret_code = subprocess.call(cmd, shell=True)
     assert ret_code == 0
@@ -65,7 +65,7 @@ def _subsample_0(setup, regtest):
 
     files.sort()
     subsamples = pandas.read_csv(join(setup.work_folder, files[-1]), sep="\t")
-    assert subsamples.shape == (4595, 21)
+    assert subsamples.shape == (4595, 22)
 
 
 def _subsample_1(setup, regtest):
@@ -82,7 +82,7 @@ def _subsample_1(setup, regtest):
 
     files.sort()
     subsamples = pandas.read_csv(join(setup.work_folder, files[-1]), sep="\t")
-    assert subsamples.shape == (4595, 21)
+    assert subsamples.shape == (4595, 22)
 
 
 def _subsample_2(setup, regtest):
@@ -100,7 +100,7 @@ def _subsample_2(setup, regtest):
     files.sort()
 
     subsamples = pandas.read_csv(join(setup.work_folder, files[-1]), sep="\t")
-    assert subsamples.shape == (4595, 21)
+    assert subsamples.shape == (4595, 22)
 
 
 def ls(folder, regtest):
@@ -121,7 +121,10 @@ def _learn(setup, regtest):
     ls(setup.work_folder, regtest)
 
     df = pandas.read_csv(join(setup.work_folder, "weights.txt"), header=None, sep="\t")
+    print(file=regtest)
+    print("weights", file=regtest)
     df.to_string(regtest)
+    print(file=regtest)
     df = pandas.read_csv(join(setup.work_folder, "sum_stat_subsampled.txt"), sep="\t")
     df.to_string(regtest)
 
@@ -151,10 +154,10 @@ def _score_pfdr_global(setup, regtest):
     ls(setup.work_folder, regtest)
 
     print(file=regtest)
-    print(open(join(setup.result_folder, "summary_stats.txt")).read(), file=regtest)
+    print(open(join(setup.result_folder, "summary_stats_grouped_by_peptide_id.txt")).read(), file=regtest)
     print(file=regtest)
     print(open(join(
-        setup.result_folder, "summary_stats_grouped_by_transition_group_id.txt")).read(), file=regtest)
+        setup.result_folder, "summary_stats_grouped_by_peptide_id.txt")).read(), file=regtest)
 
     for i in range(setup.number_input_files):
         with open(join(setup.result_folder, "data_%d_scored.txt" % i)) as fp:
@@ -207,10 +210,10 @@ def _score_pfdr_local_global(setup, regtest):
     ls(setup.work_folder, regtest)
 
     print(file=regtest)
-    print(open(join(setup.result_folder, "summary_stats.txt")).read(), file=regtest)
+    print(open(join(setup.result_folder, "summary_stats_grouped_by_transition_group_id.txt")).read(), file=regtest)
     print(file=regtest)
     print(open(join(
-        setup.result_folder, "summary_stats_grouped_by_transition_group_id.txt")).read(), file=regtest)
+        setup.result_folder, "summary_stats_grouped_by_peptide_id.txt")).read(), file=regtest)
 
     for i in range(setup.number_input_files):
         with open(join(setup.result_folder, "data_%d_scored.txt" % i)) as fp:
@@ -236,10 +239,10 @@ def _score_fdr(setup, regtest):
     ls(setup.work_folder, regtest)
 
     print(file=regtest)
-    print(open(join(setup.result_folder, "summary_stats.txt")).read(), file=regtest)
+    print(open(join(setup.result_folder, "summary_stats_grouped_by_transition_group_id.txt")).read(), file=regtest)
     print(file=regtest)
     print(open(join(
-        setup.result_folder, "summary_stats_grouped_by_transition_group_id.txt")).read(), file=regtest)
+        setup.result_folder, "summary_stats_grouped_by_peptide_id.txt")).read(), file=regtest)
 
     for i in range(setup.number_input_files):
         with open(join(setup.result_folder, "data_%d_scored.txt" % i)) as fp:
