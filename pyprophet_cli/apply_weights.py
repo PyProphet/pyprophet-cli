@@ -128,7 +128,7 @@ class ApplyWeights(core.Job):
         store = pd.HDFStore(out_path, mode="w")
 
         df = pd.DataFrame(dict(scores=scores, ids=tg_ids, decoy_flags=decoy_flags))
-        store["tg_id"] = extract_top_scores(df)
+        store[ID_COL] = extract_top_scores(df)
 
         for name, ids in zip(extra_group_columns, all_extra_ids):
             df["ids"] = ids

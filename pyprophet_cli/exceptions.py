@@ -8,3 +8,8 @@ class InvalidInput(Exception):
 
 class WorkflowError(Exception):
     pass
+
+
+class CommandLineError(Exception):
+    pass
+
