@@ -2,9 +2,10 @@
  1    6482 work_folder/full_stat_subsampled.txt
  2      17 work_folder/invalid_columns.txt
  3     392 work_folder/score_columns.txt
- 4 1107656 work_folder/subsampled_data_0.txt
- 5     707 work_folder/sum_stat_subsampled.txt
- 6     433 work_folder/weights.txt
+ 4     375 work_folder/score_columns_in_order_from_classifier.txt
+ 5 1107656 work_folder/subsampled_data_0.txt
+ 6     707 work_folder/sum_stat_subsampled.txt
+ 7     433 work_folder/weights.txt
 
 weights
             0
@@ -40,9 +41,10 @@ weights
  3    6482 work_folder/full_stat_subsampled.txt
  4      17 work_folder/invalid_columns.txt
  5     392 work_folder/score_columns.txt
- 6 1107656 work_folder/subsampled_data_0.txt
- 7     707 work_folder/sum_stat_subsampled.txt
- 8     433 work_folder/weights.txt
+ 6     375 work_folder/score_columns_in_order_from_classifier.txt
+ 7 1107656 work_folder/subsampled_data_0.txt
+ 8     707 work_folder/sum_stat_subsampled.txt
+ 9     433 work_folder/weights.txt
  0 2940711 result_folder_1/data_0_scored.txt
  1   29656 result_folder_1/report_data_0_grouped_by_peptide_id.pdf
  2   29656 result_folder_1/report_data_0_grouped_by_transition_group_id.pdf
@@ -54,9 +56,10 @@ weights
  3    6482 work_folder/full_stat_subsampled.txt
  4      17 work_folder/invalid_columns.txt
  5     392 work_folder/score_columns.txt
- 6 1107656 work_folder/subsampled_data_0.txt
- 7     707 work_folder/sum_stat_subsampled.txt
- 8     433 work_folder/weights.txt
+ 6     375 work_folder/score_columns_in_order_from_classifier.txt
+ 7 1107656 work_folder/subsampled_data_0.txt
+ 8     707 work_folder/sum_stat_subsampled.txt
+ 9     433 work_folder/weights.txt
 
 summary_stats_data_0_grouped_by_peptide_id.txt
 

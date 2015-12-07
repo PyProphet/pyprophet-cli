@@ -2,10 +2,11 @@
  1    6531 work_folder/full_stat_subsampled.txt
  2      17 work_folder/invalid_columns.txt
  3     392 work_folder/score_columns.txt
- 4 1107656 work_folder/subsampled_data_0.txt
- 5 1107656 work_folder/subsampled_data_2.txt
- 6     711 work_folder/sum_stat_subsampled.txt
- 7     433 work_folder/weights.txt
+ 4     375 work_folder/score_columns_in_order_from_classifier.txt
+ 5 1107656 work_folder/subsampled_data_0.txt
+ 6 1107656 work_folder/subsampled_data_2.txt
+ 7     711 work_folder/sum_stat_subsampled.txt
+ 8     433 work_folder/weights.txt
 
 weights
             0
@@ -45,10 +46,11 @@ weights
  7    6531 work_folder/full_stat_subsampled.txt
  8      17 work_folder/invalid_columns.txt
  9     392 work_folder/score_columns.txt
-10 1107656 work_folder/subsampled_data_0.txt
-11 1107656 work_folder/subsampled_data_2.txt
-12     711 work_folder/sum_stat_subsampled.txt
-13     433 work_folder/weights.txt
+10     375 work_folder/score_columns_in_order_from_classifier.txt
+11 1107656 work_folder/subsampled_data_0.txt
+12 1107656 work_folder/subsampled_data_2.txt
+13     711 work_folder/sum_stat_subsampled.txt
+14     433 work_folder/weights.txt
  0 2941607 result_folder_3/data_0_scored.txt
  1 2941607 result_folder_3/data_1_scored.txt
  2 2941607 result_folder_3/data_2_scored.txt
@@ -66,10 +68,11 @@ weights
  7    6531 work_folder/full_stat_subsampled.txt
  8      17 work_folder/invalid_columns.txt
  9     392 work_folder/score_columns.txt
-10 1107656 work_folder/subsampled_data_0.txt
-11 1107656 work_folder/subsampled_data_2.txt
-12     711 work_folder/sum_stat_subsampled.txt
-13     433 work_folder/weights.txt
+10     375 work_folder/score_columns_in_order_from_classifier.txt
+11 1107656 work_folder/subsampled_data_0.txt
+12 1107656 work_folder/subsampled_data_2.txt
+13     711 work_folder/sum_stat_subsampled.txt
+14     433 work_folder/weights.txt
 
 num_null   : 25.00
 num_total  : 387.00

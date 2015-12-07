@@ -12,7 +12,9 @@ from pyprophet.pyprophet import PyProphet
 
 from . import io, core
 from .common_options import work_folder, separator, random_seed, ignore_invalid_scores
-from .constants import SUBSAMPLED_FILES_PATTERN, INVALID_COLUMNS_FILE, WEIGHTS_FILE_NAME
+from .constants import (SUBSAMPLED_FILES_PATTERN, INVALID_COLUMNS_FILE, WEIGHTS_FILE_NAME,
+                        SUM_STAT_SUBSAMPLED_FILE, FULL_STAT_SUBSAMPLED_FILE,
+                        SCORE_COLUMNS_ORDER_FILE)
 
 from .exceptions import WorkflowError
 
@@ -65,13 +67,18 @@ class Learn(core.Job):
         for line in str(result.summary_statistics).split("\n"):
             self.logger.info(line.rstrip())
 
-        self.logger.info("write sum_stat_subsampled.txt")
-        with open(join(self.work_folder, "sum_stat_subsampled.txt"), "w") as fp:
+        self.logger.info("write %s" % SUM_STAT_SUBSAMPLED_FILE)
+        with open(join(self.work_folder, SUM_STAT_SUBSAMPLED_FILE), "w") as fp:
             result.summary_statistics.to_csv(fp, sep=self.separator, index=False)
 
-        self.logger.info("write full_stat_subsampled.txt")
-        with open(join(self.work_folder, "full_stat_subsampled.txt"), "w") as fp:
+        self.logger.info("write %s" % FULL_STAT_SUBSAMPLED_FILE)
+        with open(join(self.work_folder, FULL_STAT_SUBSAMPLED_FILE), "w") as fp:
             result.final_statistics.to_csv(fp, sep=self.separator, index=False)
+
+        self.logger.info("write %s" % SCORE_COLUMNS_ORDER_FILE)
+        with open(join(self.work_folder, SCORE_COLUMNS_ORDER_FILE), "w") as fp:
+            for name in scorer.score_columns:
+                print(name, file=fp)
 
         weights_path = join(self.work_folder, WEIGHTS_FILE_NAME)
         self.logger.info("write {}".format(weights_path))

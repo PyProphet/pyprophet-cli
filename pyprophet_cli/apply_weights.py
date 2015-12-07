@@ -13,7 +13,8 @@ from .common_options import (job_number, job_count, local_folder, separator, dat
 from . import io, core
 
 from .constants import (WEIGHTS_FILE_NAME, SCORE_DATA_FILE_ENDING, ID_COL, INVALID_COLUMNS_FILE,
-                        EXTRA_GROUP_COLUMNS_FILE, TOP_SCORE_DATA_FILE_ENDING)
+                        EXTRA_GROUP_COLUMNS_FILE, TOP_SCORE_DATA_FILE_ENDING,
+                        SCORE_COLUMNS_ORDER_FILE)
 
 from .exceptions import WorkflowError
 
@@ -36,6 +37,7 @@ class ApplyWeights(core.Job):
     def _setup(self):
         io.setup_input_files(self, self.data_filename_pattern)
         self._load_weights()
+        self._load_score_columns_order()
 
     def _load_weights(self):
         weights_path = join(self.work_folder, WEIGHTS_FILE_NAME)
@@ -46,6 +48,16 @@ class ApplyWeights(core.Job):
             self.weights = np.loadtxt(weights_path)
         except ValueError:
             raise WorkflowError("weights file %s is not valid" % weights_path)
+
+    def _load_score_columns_order(self):
+        score_columns_path = join(self.work_folder, SCORE_COLUMNS_ORDER_FILE)
+        if not exists(score_columns_path):
+            raise WorkflowError("did not find file %s, maybe one of the previous steps of the "
+                                "pyprophet workflow is broken" % score_columns_path)
+        try:
+            self.score_columns_in_order = np.loadtxt(score_columns_path, dtype=str).tolist()
+        except ValueError:
+            raise WorkflowError("weights file %s is not valid" % score_columns_path)
 
     def _local_job(self, i):
         if self.local_folder:
@@ -63,7 +75,6 @@ class ApplyWeights(core.Job):
         self.logger.info("start scoring %s" % path)
 
         all_scores = []
-        score_column_indices = None
         tg_ids = []
         invalid_columns = io.read_column_names(self.work_folder, INVALID_COLUMNS_FILE)
         chunk_count = 0
@@ -77,19 +88,12 @@ class ApplyWeights(core.Job):
         for chunk in pd.read_csv(path, sep=self.separator, chunksize=self.chunk_size,
                                  dtype=dtype):
             chunk_count += 1
-            if score_column_indices is None:
-                score_column_indices = []
-                for (i, name) in enumerate(chunk.columns):
-                    if name in invalid_columns:
-                        continue
-                    if name.startswith("main_") or name.startswith("var_"):
-                        score_column_indices.append(i)
 
             tg_ids.extend(chunk[ID_COL])
             for i, extra_group_column in enumerate(extra_group_columns):
                 all_extra_ids[i].extend(chunk[extra_group_column])
 
-            chunk = chunk.iloc[:, score_column_indices]
+            chunk = chunk.loc[:, self.score_columns_in_order]
             scores = chunk.dot(self.weights).astype(np.float32)
             all_scores.append(scores)
 

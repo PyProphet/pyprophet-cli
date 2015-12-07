@@ -2,14 +2,18 @@
 
 RESULTFOLDER=results
 WORKFOLDER=results/_work
+DATA_FOLDER=$HOME/Downloads
+PATTERN="g*.tsv"
 
-pyprophet-cli prepare --data-folder tests/data --data-filename-pattern test_data.txt --work-folder $WORKFOLDER \
-                      --extra-group-column transition_group_id --extra-group-column transition_group_id
 
-pyprophet-cli subsample --random-seed 43 --data-folder tests/data --data-filename-pattern test_data.txt --work-folder $WORKFOLDER --sample-factor 1.0
+#pyprophet-cli prepare --data-folder $DATA_FOLDER --data-filename-pattern $PATTERN --work-folder $WORKFOLDER \
+                      #--extra-group-column transition_group_id --extra-group-column transition_group_id
 
-pyprophet-cli learn --random-seed 43 --work-folder $WORKFOLDER --ignore-invalid-scores
+#pyprophet-cli subsample --random-seed 43 --data-folder $DATA_FOLDER --data-filename-pattern $PATTERN --work-folder $WORKFOLDER --sample-factor 1.0
 
-pyprophet-cli apply_weights --work-folder $WORKFOLDER --data-folder tests/data/
 
-pyprophet-cli score --work-folder $WORKFOLDER --data-folder tests/data/ --overwrite-results  --d-score-cutoff -100000 --result-folder $RESULTFOLDER --use-fdr
+# pyprophet-cli learn --random-seed 43 --work-folder $WORKFOLDER --ignore-invalid-scores
+
+pyprophet-cli apply_weights --work-folder $WORKFOLDER --data-folder $DATA_FOLDER --data-filename-pattern $PATTERN
+
+pyprophet-cli score --work-folder $WORKFOLDER --data-folder $DATA_FOLDER --overwrite-results  --d-score-cutoff -100000 --result-folder $RESULTFOLDER --use-fdr  --statistics-mode local --data-filename-pattern $PATTERN
