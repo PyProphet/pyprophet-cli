@@ -12,7 +12,7 @@ PATTERN="g*.tsv"
 #pyprophet-cli subsample --random-seed 43 --data-folder $DATA_FOLDER --data-filename-pattern $PATTERN --work-folder $WORKFOLDER --sample-factor 1.0
 
 
-# pyprophet-cli learn --random-seed 43 --work-folder $WORKFOLDER --ignore-invalid-scores
+pyprophet-cli learn --random-seed 43 --work-folder $WORKFOLDER --ignore-invalid-scores
 
 pyprophet-cli apply_weights --work-folder $WORKFOLDER --data-folder $DATA_FOLDER --data-filename-pattern $PATTERN
 
