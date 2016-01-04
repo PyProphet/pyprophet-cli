@@ -191,6 +191,7 @@ class _Scorer(object):
 
         stats, pvalues = calculate_final_statistics(top_target_scores, top_target_scores,
                                                     top_decoy_scores, self.lambda_,
+                                                    self.use_pemp,
                                                     not self.use_fdr)
         self._report_results(
             run_idx, name, stats, top_target_scores, top_decoy_scores, pvalues)
@@ -394,6 +395,9 @@ class Score(core.Job):
                result_folder,
                click.option(
                    "--use-fdr", is_flag=True, help="use FDR, not pFDR for scoring"),
+               click.option(
+                   "--use-pemp", is_flag=True, help="use empirical p-values instead of p-values "
+                                                    "from normal distribution"),
                click.option("--overwrite-results", is_flag=True),
                lambda_,
                click.option("--d-score-cutoff", type=float, default=None,
