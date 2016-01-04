@@ -139,13 +139,15 @@ class _Scorer(object):
 
         for (group_column_name, stats) in self.stats.items():
             # add column with q values (m-score):
-            __, q = lookup_s_and_q_values_from_error_table(d_scores, self.stats[ID_COL].df)
+            __, q = lookup_s_and_q_values_from_error_table(d_scores,
+                                                           self.stats[group_column_name].df)
             chunk["%s_m_score" % group_column_name] = q
             nan_count = np.sum(np.isnan(q))
             if nan_count:
-                self.logger.warn("found %d NAN in q-scores for %s !!" % (nan_count, group_column_name))
+                self.logger.warn("found %d NAN in q-scores for %s !!" % (nan_count,
+                                                                         group_column_name))
             # add column with p values
-            p = lookup_p_values_from_error_table(d_scores, self.stats[ID_COL].df)
+            p = lookup_p_values_from_error_table(d_scores, self.stats[group_column_name].df)
             chunk["%s_p_value" % group_column_name] = p
 
         if self.d_score_cutoff is not None:
