@@ -46,7 +46,7 @@ data_filename_pattern = option("--data-filename-pattern", default="*.txt",
 ignore_invalid_scores = option("--ignore-invalid-scores", is_flag=True,
                                help="ignore columns where all values are invalid/missing")
 
-statistics_mode = click.option("--statistics-mode", type=click.Choice(['local', 'global', 'local-global']))
+statistics_mode = click.option("--statistics-mode", type=click.Choice(['run-specific', 'global', 'experiment-wide']))
 
 def transform_sep(ctx, param, value):
     return {"tab": "\t", "comma": ",", "semicolon": ";"}.get(value)

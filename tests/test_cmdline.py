@@ -166,9 +166,9 @@ def _score_pfdr_global(setup, regtest):
             print(fp.next(), file=regtest)
 
 
-def _score_pfdr_local(setup, regtest):
+def _score_pfdr_run(setup, regtest):
     cmd = ("pyprophet-cli score --job-number 1 --job-count 1 "
-           "--statistics-mode local "
+           "--statistics-mode run-specific "
            "--local-folder %s "
            "--overwrite-results "
            "--data-filename-pattern '*.txt' "
@@ -194,9 +194,9 @@ def _score_pfdr_local(setup, regtest):
             print(fp.next(), file=regtest)
 
 
-def _score_pfdr_local_global(setup, regtest):
+def _score_pfdr_experiment(setup, regtest):
     cmd = ("pyprophet-cli score --job-number 1 --job-count 1 "
-           "--statistics-mode local-global "
+           "--statistics-mode experiment-wide "
            "--overwrite-results "
            "--local-folder %s "
            "--data-filename-pattern '*.txt' "
@@ -259,20 +259,20 @@ def test_global_scoring_variant_0(setup, regtest):
     _score_pfdr_global(setup, regtest)
 
 
-def test_local_scoring(setup, regtest):
+def test_run_scoring(setup, regtest):
     _prepare(setup, regtest)
     _subsample_0(setup, regtest)
     _learn(setup, regtest)
     _apply_weights(setup, regtest)
-    _score_pfdr_local(setup, regtest)
+    _score_pfdr_run(setup, regtest)
 
 
-def test_local_global_scoring(setup, regtest):
+def test_experiment_scoring(setup, regtest):
     _prepare(setup, regtest)
     _subsample_0(setup, regtest)
     _learn(setup, regtest)
     _apply_weights(setup, regtest)
-    _score_pfdr_local_global(setup, regtest)
+    _score_pfdr_experiment(setup, regtest)
 
 
 def test_global_scoring_variant_1(setup, regtest):
