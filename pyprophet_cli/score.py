@@ -413,7 +413,7 @@ class Score(core.Job):
 
         # we switch the class, this means: all attributes are kept, but the methods after
         # this assignment will change:
-        self.__class__ = {"local": _LocalScorer,
+        self.__class__ = {"run-specific": _LocalScorer,
                           "global": _GlobalGlobalScorer,
-                          "local-global": _LocalGlobalScorer}[self.statistics_mode]
+                          "experiment-wide": _LocalGlobalScorer}[self.statistics_mode]
         self.run()
