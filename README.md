@@ -1,31 +1,36 @@
 # About
 
-``pyprophet-cli`` is a collection of command line tools which can be chained to run the new ``pyprophet`` workflow either locally or on ETH super computer brutus.
+``pyprophet-cli`` is a collection of command line tools which can be chained to run the new ``pyprophet`` workflow either manually or guided by LSF.
 
+# Documentation
 
+Documentation to ``pyprophet-cli`` can be found on the [project wiki](https://github.com/PyProphet/pyprophet-cli/wiki).
+
+# Quick start
 ## Command Line Tool
 
-After instalation wiht ``pip`` you can get more help using
+After instalation with ``pip`` you can get more help using
 ````
 $ pyprophet-cli --help
 
     Usage: pyprophet-cli [OPTIONS] COMMAND [ARGS]...
-
+    
     Options:
-    --help  Show this message and exit.
-
+      --version  print version of pyprophet-cli
+      --help     Show this message and exit.
+    
     Commands:
-    apply_weights  applies weights to given data files and...
-    check          runs validity tests on input files in...
-    learn          runs pyprophet learner on data files in...
-    score          applies weights to given data files and...
-    subsample      subsamples transition groups from given input...
+      apply_weights  applies weights to given data files and...
+      learn          runs pyprophet learner on data files in...
+      prepare        runs validity tests on input files in...
+      score          applies weights to given data files and...
+      subsample      subsamples transition groups from given input...
 
 ````
 
 ## General Workflow
 
-1. ``check``:  check n input files in parallel
+1. ``prepare``:  check n input files in parallel
 
 2. ``subsample``:  subsample n input files, create n output files which are smaller by a factor eg 20
 
