@@ -129,16 +129,16 @@ class ApplyWeights(core.Job):
 
         stem = io.file_name_stem(path)
         out_path = join(self.work_folder, stem + TOP_SCORE_DATA_FILE_ENDING)
-        store = pd.HDFStore(out_path, mode="w")
+        with pd.HDFStore(out_path, mode="w") as store:
 
-        df = pd.DataFrame(dict(scores=scores, ids=tg_ids, decoy_flags=decoy_flags))
-        store[ID_COL] = extract_top_scores(df)
+            df = pd.DataFrame(dict(scores=scores, ids=tg_ids, decoy_flags=decoy_flags))
+            store[ID_COL] = extract_top_scores(df)
 
-        for name, ids in zip(extra_group_columns, all_extra_ids):
-            df["ids"] = ids
-            store[name] = extract_top_scores(df)
+            for name, ids in zip(extra_group_columns, all_extra_ids):
+                df["ids"] = ids
+                store[name] = extract_top_scores(df)
 
-        self.logger.info("wrote %s" % out_path)
+            self.logger.info("wrote %s" % out_path)
 
         out_path = join(self.work_folder, stem + SCORE_DATA_FILE_ENDING)
         np.savez(out_path, scores=scores, numeric_ids=numeric_ids, reverse_map=reverse_map)
