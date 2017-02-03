@@ -29,7 +29,7 @@ class Prepare(core.Job):
         self._write_extra_group_column_names()
 
     def _setup_work_folder(self):
-        if not os.path.exists(self.work_folder):
+        if not io.exists(self.work_folder):
             os.makedirs(self.work_folder)
 
     def _check_headers(self):

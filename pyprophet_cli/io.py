@@ -3,11 +3,23 @@ from __future__ import print_function
 
 import os
 import fnmatch
+import subprocess
 
 import numpy as np
 
 from .exceptions import WorkflowError
 from .constants import SCORE_COLUMNS_FILE, INVALID_COLUMNS_FILE
+
+
+def exists(path):
+    """slower but will work around problems on NFS, see
+    http://stackoverflow.com/questions/3112546/os-path-exists-lies
+
+    os.path.exists uses cached "stat" values which might be out of sync.
+    Calling "ls" first updates this cache.
+    """
+    subprocess.call(["ls", path], shell=True)
+    return os.path.exists(path)
 
 
 join = os.path.join
@@ -29,7 +41,7 @@ def scan_files(folder, data_filename_pattern=None):
 
 def setup_input_files(job, data_filename_pattern):
     if job.local_folder:
-        if not os.path.exists(job.local_folder):
+        if not exists(job.local_folder):
             raise WorkflowError("%s does not exist" % job.local_folder)
     job.input_file_pathes = scan_files(job.data_folder, data_filename_pattern)
     if not job.input_file_pathes:

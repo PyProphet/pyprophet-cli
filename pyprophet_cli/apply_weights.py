@@ -1,7 +1,7 @@
 # encoding: utf-8
 from __future__ import print_function
 
-from os.path import join, exists
+from os.path import join
 import shutil
 
 import numpy as np
@@ -11,6 +11,7 @@ from .common_options import (job_number, job_count, local_folder, separator, dat
                              work_folder, chunk_size, data_filename_pattern)
 
 from . import io, core
+from .io import exists
 
 from .constants import (WEIGHTS_FILE_NAME, SCORE_DATA_FILE_ENDING, ID_COL, INVALID_COLUMNS_FILE,
                         EXTRA_GROUP_COLUMNS_FILE, TOP_SCORE_DATA_FILE_ENDING,

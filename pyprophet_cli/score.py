@@ -1,7 +1,7 @@
 # encoding: utf-8
 from __future__ import print_function
 
-from os.path import join, exists, basename
+from os.path import join, basename
 from os import listdir, makedirs
 import shutil
 
@@ -18,6 +18,7 @@ from pyprophet.stats import (calculate_final_statistics, summary_err_table,
                              lookup_p_values_from_error_table)
 
 from . import io, core
+from .io import exists
 
 from .common_options import (job_number, job_count, local_folder, separator, data_folder,
                              work_folder, chunk_size, data_filename_pattern, result_folder,
