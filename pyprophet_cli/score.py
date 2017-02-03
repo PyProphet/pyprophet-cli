@@ -316,14 +316,14 @@ class _GlobalScorer(_Scorer):
         for name in listdir(self.work_folder):
             if name.endswith(TOP_SCORE_DATA_FILE_ENDING):
                 path = join(self.work_folder, name)
-                store = pd.HDFStore(path, mode="r")
+                with pd.HDFStore(path, mode="r") as store:
 
-                for key in store.keys():
-                    if key not in top_scores:
-                        top_scores[key] = store[key]
-                    else:
-                        top_scores[key] = self._merge_score_frames(
-                            top_scores[key], store[key])
+                    for key in store.keys():
+                        if key not in top_scores:
+                            top_scores[key] = store[key]
+                        else:
+                            top_scores[key] = self._merge_score_frames(
+                                top_scores[key], store[key])
 
         if not top_scores:
             raise WorkflowError(
