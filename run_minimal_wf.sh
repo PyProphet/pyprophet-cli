@@ -1,11 +1,13 @@
 #!/bin/sh
 
-RESULTFOLDER=results
-WORKFOLDER=results/_work
+BASE=/cluster/project/aebersold
+RESULTFOLDER=$BASE/results
+WORKFOLDER=$RESULTFOLDER/_work
 
 rm $WORKFOLDER/*
 
 DATA_FOLDER=$HOME/Downloads
+DATA_FOLDER=$BASE/datafolder
 PATTERN="g*.tsv"
 
 DATA_FOLDER=./tests/data

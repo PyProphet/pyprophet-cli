@@ -76,8 +76,11 @@ class _Scorer(object):
             if listdir(self.result_folder):
                 raise WorkflowError("result folder %r is not empty, you may use "
                                     "--overwrite-results" % self.result_folder)
-        if not exists(self.result_folder):
+        try:
             makedirs(self.result_folder)
+        except OSError:
+            # might already exist. using "exists" function is not reliable on NFS
+            pass
 
     def _copy_to_local(self, run_idx):
         path = self.input_file_pathes[run_idx]
