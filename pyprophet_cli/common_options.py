@@ -58,6 +58,8 @@ lfdr_monotone = option('--lfdr_monotone/--no-lfdr_monotone', default=True, show_
 
 lfdr_transformation = option('--lfdr_transformation', default='probit', show_default=True, type=click.Choice(['probit', 'logit']), help='Either a "probit" or "logit" transformation is applied to the p-values so that a local FDR estimate can be formed that does not involve edge effects of the [0,1] interval in which the p-values lie.')
 
+lfdr_adj = option('--lfdr_adj', default=1.5, show_default=True, type=float, help='Numeric value that is applied as a multiple of the smoothing bandwidth used in the density estimation.')
+
 lfdr_eps = option('--lfdr_eps', default=np.power(10.0,-8), show_default=True, type=float, help='Numeric value that is threshold for the tails of the empirical p-value distribution.')
 
 extra_group_columns = option("--extra-group-column", "extra_group_columns", type=str, multiple=True,

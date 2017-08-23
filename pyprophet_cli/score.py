@@ -22,7 +22,7 @@ from .io import exists
 from .common_options import (job_number, job_count, local_folder, separator, data_folder,
                              work_folder, chunk_size, data_filename_pattern, result_folder,
                              lambda_, pi0_method, pi0_smooth_df, pi0_smooth_log_pi0,
-                             lfdr_truncate, lfdr_monotone, lfdr_transformation, lfdr_eps,
+                             lfdr_truncate, lfdr_monotone, lfdr_transformation, lfdr_adj, lfdr_eps,
                              statistics_mode)
 
 from .constants import (SCORE_DATA_FILE_ENDING, TOP_SCORE_DATA_FILE_ENDING, SCORED_ENDING,
@@ -199,7 +199,7 @@ class _Scorer(object):
                                                     self.pi0_smooth_log_pi0, 
                                                     self.use_pemp, not self.use_fdr,
                                                     self.lfdr_truncate, self.lfdr_monotone,
-                                                    self.lfdr_transformation, self.lfdr_eps)
+                                                    self.lfdr_transformation, self.lfdr_adj, self.lfdr_eps)
         self._report_results(
             run_idx, name, stats, top_target_scores, top_decoy_scores, pvalues)
         return stats
@@ -407,7 +407,7 @@ class Score(core.Job):
                                                     "from normal distribution"),
                click.option("--overwrite-results", is_flag=True),
                lambda_, pi0_method, pi0_smooth_df, pi0_smooth_log_pi0,
-               lfdr_truncate, lfdr_monotone, lfdr_transformation, lfdr_eps,
+               lfdr_truncate, lfdr_monotone, lfdr_transformation, lfdr_adj, lfdr_eps,
                click.option("--d-score-cutoff", type=float, default=None,
                             help="filter output files by given d-score threshold"),
                statistics_mode,
