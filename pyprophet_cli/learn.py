@@ -6,6 +6,8 @@ import os
 import random
 
 import pandas as pd
+pd.options.mode.chained_assignment = None
+
 import numpy as np
 
 from pyprophet.pyprophet import PyProphet

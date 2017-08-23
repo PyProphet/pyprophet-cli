@@ -1,13 +1,15 @@
 # encoding: utf-8
 from __future__ import print_function
 
+import sys
 import click
+import numpy as np
 
 Path = click.Path
 option = click.option
 
-job_number = option("--job-number", default=1, help="1 <= job-number <= job-count [default=1]")
-job_count = option("--job-count", default=1, help="overall number of batch jobs [default=1]")
+job_number = option("--job-number", default=1, show_default=True, help="1 <= job-number <= job-count")
+job_count = option("--job-count", default=1, show_default=True, help="overall number of batch jobs")
 data_folder = option("--data-folder", help="folder of input data to process",
                      type=Path(exists=True, file_okay=False, dir_okay=True, readable=True),
                      required=True)
@@ -29,13 +31,34 @@ local_folder = option("--local-folder",
 random_seed = option("--random-seed", type=int,
                      help="set a fixed seed for reproducable results")
 
-chunk_size = option("--chunk-size", default=100000,
-                    help="chunk size when reading input files, may impact processing speed "
-                    "[default=100000]",
+chunk_size = option("--chunk-size", default=100000, show_default=True,
+                    help="chunk size when reading input files, may impact processing speed ",
                     )
 
-lambda_ = option("--lambda", "lambda_", default=0.4,
-                 help="lambda value for storeys method [default=0.4]")
+def transform_lambda_(ctx, param, value):
+  if value[1] == 0 and value[2] == 0:
+      lambda_ = value[0]
+  elif 0 <= value[0] < 1 and value[0] <= value[1] <= 1 and 0 < value[2] < 1:
+      lambda_ = np.arange(value[0], value[1], value[2])
+  else:
+      sys.exit('Error: Wrong input values for pi0_lambda. pi0_lambda must be within [0,1).')
+  return(lambda_)
+
+lambda_ = option('--lambda', "lambda_", default=[0.4,0,0], show_default=True, type=(float, float, float), help='Use non-parametric estimation of p-values. Either use <START END STEPS>, e.g. 0.1, 1.0, 0.1 or set to fixed value, e.g. 0.4.', callback=transform_lambda_)
+
+pi0_method = option('--pi0_method', default='smoother', show_default=True, type=click.Choice(['smoother', 'bootstrap']), help='Either "smoother" or "bootstrap"; the method for automatically choosing tuning parameter in the estimation of pi_0, the proportion of true null hypotheses.')
+
+pi0_smooth_df = option('--pi0_smooth_df', default=3, show_default=True, type=int, help='Number of degrees-of-freedom to use when estimating pi_0 with a smoother.')
+
+pi0_smooth_log_pi0 = option('--pi0_smooth_log_pi0/--no-pi0_smooth_log_pi0', default=False, show_default=True, help='If True and pi0_method = "smoother", pi0 will be estimated by applying a smoother to a scatterplot of log(pi0) estimates against the tuning parameter lambda.')
+
+lfdr_truncate = option('--lfdr_truncate/--no-lfdr_truncate', default=True, show_default=True, help='If True, local FDR values >1 are set to 1.')
+
+lfdr_monotone = option('--lfdr_monotone/--no-lfdr_monotone', default=True, show_default=True, help='If True, local FDR values are non-decreasing with increasing p-values.')
+
+lfdr_transformation = option('--lfdr_transformation', default='probit', show_default=True, type=click.Choice(['probit', 'logit']), help='Either a "probit" or "logit" transformation is applied to the p-values so that a local FDR estimate can be formed that does not involve edge effects of the [0,1] interval in which the p-values lie.')
+
+lfdr_eps = option('--lfdr_eps', default=np.power(10.0,-8), show_default=True, type=float, help='Numeric value that is threshold for the tails of the empirical p-value distribution.')
 
 extra_group_columns = option("--extra-group-column", "extra_group_columns", type=str, multiple=True,
                             help="additionally compute score over this group, you may repeat this option")
