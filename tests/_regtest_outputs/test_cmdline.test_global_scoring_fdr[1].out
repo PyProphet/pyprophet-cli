@@ -45,7 +45,7 @@ weights
  7 1107656 work_folder/subsampled_data_0.txt
  8     818 work_folder/sum_stat_subsampled.txt
  9     433 work_folder/weights.txt
- 0 2940325 result_folder_1/data_0_scored.txt
+ 0 3042524 result_folder_1/data_0_scored.txt
  1   27609 result_folder_1/report_grouped_by_peptide_id.pdf
  2   27609 result_folder_1/report_grouped_by_transition_group_id.pdf
  3    1525 result_folder_1/summary_stats_grouped_by_peptide_id.txt
@@ -99,7 +99,7 @@ sdev top decoy  scores: 1.000000
 7    0.40       NaN           NaN           NaN    NaN   NaN           NaN           NaN           NaN       NaN       NaN       NaN
 8    0.50       NaN           NaN           NaN    NaN   NaN           NaN           NaN           NaN       NaN       NaN       NaN
 
-transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	peptide_id_m_score	peptide_id_p_value
+transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	transition_group_id_pep	peptide_id_m_score	peptide_id_p_value	peptide_id_pep
 
-459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.00816440582	4.1629956371e-08	2.74757724128e-07	4.1629956371e-08	2.74757724128e-07
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.00816440582	4.1629956371e-08	2.74757724128e-07	2.15437849487e-07	4.1629956371e-08	2.74757724128e-07	2.15437849487e-07
 
