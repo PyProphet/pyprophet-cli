@@ -14,15 +14,16 @@ import pandas as pd
 from pyprophet.optimized import rank32
 from pyprophet.report import save_report
 from pyprophet.stats import (calculate_final_statistics, summary_err_table,
-                             lookup_s_and_q_values_from_error_table, final_err_table,
-                             lookup_p_values_from_error_table)
+                             lookup_values_from_error_table, final_err_table)
 
 from . import io, core
 from .io import exists
 
 from .common_options import (job_number, job_count, local_folder, separator, data_folder,
                              work_folder, chunk_size, data_filename_pattern, result_folder,
-                             lambda_, statistics_mode)
+                             lambda_, pi0_method, pi0_smooth_df, pi0_smooth_log_pi0,
+                             lfdr_truncate, lfdr_monotone, lfdr_transformation, lfdr_adj, lfdr_eps,
+                             statistics_mode)
 
 from .constants import (SCORE_DATA_FILE_ENDING, TOP_SCORE_DATA_FILE_ENDING, SCORED_ENDING,
                         EXTRA_GROUP_COLUMNS_FILE, ID_COL)
@@ -150,17 +151,16 @@ class _Scorer(object):
 
         for (group_column_name, stats) in self.stats.items():
             # add column with q values (m-score):
-            __, q = lookup_s_and_q_values_from_error_table(d_scores,
+            p, __, peps, q = lookup_values_from_error_table(d_scores,
                                                            self.stats[group_column_name].df)
             chunk["%s_m_score" % group_column_name] = q
             nan_count = np.sum(np.isnan(q))
             if nan_count:
                 self.logger.warn("found %d NAN in q-scores for %s !!" % (nan_count,
                                                                          group_column_name))
-            # add column with p values
-            p = lookup_p_values_from_error_table(
-                d_scores, self.stats[group_column_name].df)
+
             chunk["%s_p_value" % group_column_name] = p
+            chunk["%s_pep" % group_column_name] = peps
 
         if self.d_score_cutoff is not None:
             chunk = chunk[chunk["d_score"] >= self.d_score_cutoff]
@@ -193,10 +193,13 @@ class _Scorer(object):
         top_target_scores = (
             top_target_scores - self.decoy_mean) / self.decoy_std_dev
 
-        stats, pvalues = calculate_final_statistics(top_target_scores, top_target_scores,
+        stats, pvalues, self.pi0 = calculate_final_statistics(top_target_scores, top_target_scores,
                                                     top_decoy_scores, self.lambda_,
-                                                    self.use_pemp,
-                                                    not self.use_fdr)
+                                                    self.pi0_method, self.pi0_smooth_df,
+                                                    self.pi0_smooth_log_pi0, 
+                                                    self.use_pemp, not self.use_fdr,
+                                                    self.lfdr_truncate, self.lfdr_monotone,
+                                                    self.lfdr_transformation, self.lfdr_adj, self.lfdr_eps)
         self._report_results(
             run_idx, name, stats, top_target_scores, top_decoy_scores, pvalues)
         return stats
@@ -288,7 +291,7 @@ class _Scorer(object):
         self._setup_plotting_packages()
         save_report(path, "", top_decoy_scores, top_target_scores, top_decoy_scores,
                     top_target_scores, cutoffs, svalues, qvalues,
-                    pvalues, self.lambda_)
+                    pvalues, self.pi0)
 
     def _setup_plotting_packages(self):
         try:
@@ -403,7 +406,8 @@ class Score(core.Job):
                    "--use-pemp", is_flag=True, help="use empirical p-values instead of p-values "
                                                     "from normal distribution"),
                click.option("--overwrite-results", is_flag=True),
-               lambda_,
+               lambda_, pi0_method, pi0_smooth_df, pi0_smooth_log_pi0,
+               lfdr_truncate, lfdr_monotone, lfdr_transformation, lfdr_adj, lfdr_eps,
                click.option("--d-score-cutoff", type=float, default=None,
                             help="filter output files by given d-score threshold"),
                statistics_mode,

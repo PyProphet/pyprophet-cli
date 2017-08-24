@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from distutils.extension import Extension
 
 
-version = (0, 0, 19)
+version = (0, 0, 20)
 
 setup(name='pyprophet-cli',
       version="%d.%d.%d" % version,
@@ -23,7 +23,7 @@ setup(name='pyprophet-cli',
       ],
       zip_safe=False,
       install_requires=[
-          "pyprophet>=0.20.1",
+          "pyprophet>=0.24.2",
           "Click",
           "tables",
       ],

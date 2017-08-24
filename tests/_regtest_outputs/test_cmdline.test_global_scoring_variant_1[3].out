@@ -1,63 +1,63 @@
  0      11 work_folder/extra_group_columns.txt
- 1    6531 work_folder/full_stat_subsampled.txt
+ 1    7864 work_folder/full_stat_subsampled.txt
  2      17 work_folder/invalid_columns.txt
  3     392 work_folder/score_columns.txt
  4     375 work_folder/score_columns_in_order_from_classifier.txt
  5 1107656 work_folder/subsampled_data_0.txt
  6 1107656 work_folder/subsampled_data_2.txt
- 7     711 work_folder/sum_stat_subsampled.txt
+ 7     825 work_folder/sum_stat_subsampled.txt
  8     433 work_folder/weights.txt
 
 weights
             0
 0    0.205158
 1   -0.113794
-2   -3.207271
+2   -3.207274
 3    1.237546
-4    2.273278
+4    2.273277
 5   -2.014004
-6   -0.577159
-7  -11.203803
+6   -0.577160
+7  -11.203802
 8    0.115312
 9    0.009366
 10  -0.006869
-11  -8.789348
-12   0.304222
+11  -8.789345
+12   0.304223
 13  -0.560647
-14   4.121452
-15   2.149895
-16   0.117643
-   qvalue    svalue        pvalue   TP  FP         TN          FN           FDR      sens    cutoff
-0    0.00  0.015385  4.370292e-10    6   0  24.123711  359.876289  1.872982e-09  0.016399  6.331468
-1    0.01  0.986598  1.365912e-01  361   3  21.123711    4.876289  9.045772e-03  0.986672  1.494575
-2    0.02  1.000000  3.114639e-01  366   8  16.123711   -0.123711  2.009444e-02  1.000000  0.601219
-3    0.05  1.000000  8.369725e-01  368  20   4.123711   -2.123711  5.198587e-02  1.000000 -0.246642
-4    0.10  1.000000  9.149143e-01  368  22   2.123711   -2.123711  5.659263e-02  1.000000 -1.182150
-5    0.20       NaN           NaN  NaN NaN        NaN         NaN           NaN       NaN       NaN
-6    0.30       NaN           NaN  NaN NaN        NaN         NaN           NaN       NaN       NaN
-7    0.40       NaN           NaN  NaN NaN        NaN         NaN           NaN       NaN       NaN
-8    0.50       NaN           NaN  NaN NaN        NaN         NaN           NaN       NaN       NaN 0   89146 work_folder/data_0_score_data.npz
+14   4.121462
+15   2.149893
+16   0.117642
+   qvalue    svalue        pvalue           pep     TP    FP         TN          FN           FDR       FNR      sens    cutoff
+0    0.00  0.015385  4.370335e-10  1.637244e-08    6.0   0.0  24.123711  359.876289  1.873001e-09  0.937239  0.016399  6.331468
+1    0.01  0.986598  1.365907e-01  3.323355e-01  361.0   3.0  21.123711    4.876289  9.045745e-03  0.190554  0.986672  1.494576
+2    0.02  1.000000  3.114647e-01  5.406845e-01  366.0   8.0  16.123711   -0.123711  2.009450e-02  0.000000  1.000000  0.601218
+3    0.05  1.000000  8.369732e-01  1.000000e+00  368.0  20.0   4.123711   -2.123711  5.198592e-02  0.000000  1.000000 -0.246641
+4    0.10  1.000000  9.149143e-01  1.000000e+00  368.0  22.0   2.123711   -2.123711  5.659263e-02  0.000000  1.000000 -1.182150
+5    0.20       NaN           NaN           NaN    NaN   NaN        NaN         NaN           NaN       NaN       NaN       NaN
+6    0.30       NaN           NaN           NaN    NaN   NaN        NaN         NaN           NaN       NaN       NaN       NaN
+7    0.40       NaN           NaN           NaN    NaN   NaN        NaN         NaN           NaN       NaN       NaN       NaN
+8    0.50       NaN           NaN           NaN    NaN   NaN        NaN         NaN           NaN       NaN       NaN       NaN 0   89146 work_folder/data_0_score_data.npz
  1 2162728 work_folder/data_0_top_score_data.hdf
  2   89146 work_folder/data_1_score_data.npz
  3 2162728 work_folder/data_1_top_score_data.hdf
  4   89146 work_folder/data_2_score_data.npz
  5 2162728 work_folder/data_2_top_score_data.hdf
  6      11 work_folder/extra_group_columns.txt
- 7    6531 work_folder/full_stat_subsampled.txt
+ 7    7864 work_folder/full_stat_subsampled.txt
  8      17 work_folder/invalid_columns.txt
  9     392 work_folder/score_columns.txt
 10     375 work_folder/score_columns_in_order_from_classifier.txt
 11 1107656 work_folder/subsampled_data_0.txt
 12 1107656 work_folder/subsampled_data_2.txt
-13     711 work_folder/sum_stat_subsampled.txt
+13     825 work_folder/sum_stat_subsampled.txt
 14     433 work_folder/weights.txt
- 0 2941607 result_folder_3/data_0_scored.txt
- 1 2941607 result_folder_3/data_1_scored.txt
- 2 2941607 result_folder_3/data_2_scored.txt
- 3   29687 result_folder_3/report_grouped_by_peptide_id.pdf
- 4   29687 result_folder_3/report_grouped_by_transition_group_id.pdf
- 5    1165 result_folder_3/summary_stats_grouped_by_peptide_id.txt
- 6    1165 result_folder_3/summary_stats_grouped_by_transition_group_id.txt
+ 0 3048930 result_folder_3/data_0_scored.txt
+ 1 3048930 result_folder_3/data_1_scored.txt
+ 2 3048930 result_folder_3/data_2_scored.txt
+ 3   27407 result_folder_3/report_grouped_by_peptide_id.pdf
+ 4   27407 result_folder_3/report_grouped_by_transition_group_id.pdf
+ 5    1404 result_folder_3/summary_stats_grouped_by_peptide_id.txt
+ 6    1404 result_folder_3/summary_stats_grouped_by_transition_group_id.txt
  0   89146 work_folder/data_0_score_data.npz
  1 2162728 work_folder/data_0_top_score_data.hdf
  2   89146 work_folder/data_1_score_data.npz
@@ -65,64 +65,64 @@ weights
  4   89146 work_folder/data_2_score_data.npz
  5 2162728 work_folder/data_2_top_score_data.hdf
  6      11 work_folder/extra_group_columns.txt
- 7    6531 work_folder/full_stat_subsampled.txt
+ 7    7864 work_folder/full_stat_subsampled.txt
  8      17 work_folder/invalid_columns.txt
  9     392 work_folder/score_columns.txt
 10     375 work_folder/score_columns_in_order_from_classifier.txt
 11 1107656 work_folder/subsampled_data_0.txt
 12 1107656 work_folder/subsampled_data_2.txt
-13     711 work_folder/sum_stat_subsampled.txt
+13     825 work_folder/sum_stat_subsampled.txt
 14     433 work_folder/weights.txt
 
 num_null   : 25.00
 num_total  : 387.00
-stats shape: (387, 10)
+stats shape: (387, 12)
 mean top target scores: 4.367877
 sdev top target scores: 1.518135
-mean top decoy  scores: -0.000000
+mean top decoy  scores: 0.000000
 sdev top decoy  scores: 1.000000
 
-   qvalue    svalue    pvalue   TP  FP            TN            FN       FDR      sens    cutoff
-0    0.00  0.872915  0.000186  316   0  2.500000e+01  4.600000e+01  0.000212  0.872928  3.559012
-1    0.01  0.998093  0.147617  361   4  2.100000e+01  1.000000e+00  0.010111  0.997238  1.046708
-2    0.02  1.000000  0.282889  361   7  1.800000e+01  1.000000e+00  0.019218  0.997238  0.574279
-3    0.05  1.000000  0.795019  363  20  5.000000e+00 -1.000000e+00  0.051894  1.000000 -0.823961
-4    0.10  1.000000  0.982480  362  25 -3.552714e-15  3.552714e-15  0.063468  1.000000 -2.107895
-5    0.20       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
-6    0.30       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
-7    0.40       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
-8    0.50       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
+   qvalue    svalue    pvalue       pep     TP    FP            TN            FN       FDR       FNR      sens    cutoff
+0    0.00  0.872915  0.000186  0.000332  316.0   0.0  2.500000e+01  4.600000e+01  0.000212  0.647953  0.872928  3.559011
+1    0.01  0.998093  0.147617  0.636067  361.0   4.0  2.100000e+01  1.000000e+00  0.010111  0.031383  0.997238  1.046708
+2    0.02  1.000000  0.282890  0.897522  361.0   7.0  1.800000e+01  1.000000e+00  0.019218  0.056434  0.997238  0.574279
+3    0.05  1.000000  0.795019  1.000000  363.0  20.0  5.000000e+00 -1.000000e+00  0.051894  0.000000  1.000000 -0.823961
+4    0.10  1.000000  0.982480  1.000000  362.0  25.0  3.552714e-15 -3.552714e-15  0.063468  0.000000  1.000000 -2.107898
+5    0.20       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
+6    0.30       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
+7    0.40       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
+8    0.50       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
 
 num_null   : 25.00
 num_total  : 387.00
-stats shape: (387, 10)
+stats shape: (387, 12)
 mean top target scores: 4.367877
 sdev top target scores: 1.518135
-mean top decoy  scores: -0.000000
+mean top decoy  scores: 0.000000
 sdev top decoy  scores: 1.000000
 
-   qvalue    svalue    pvalue   TP  FP            TN            FN       FDR      sens    cutoff
-0    0.00  0.872915  0.000186  316   0  2.500000e+01  4.600000e+01  0.000212  0.872928  3.559012
-1    0.01  0.998093  0.147617  361   4  2.100000e+01  1.000000e+00  0.010111  0.997238  1.046708
-2    0.02  1.000000  0.282889  361   7  1.800000e+01  1.000000e+00  0.019218  0.997238  0.574279
-3    0.05  1.000000  0.795019  363  20  5.000000e+00 -1.000000e+00  0.051894  1.000000 -0.823961
-4    0.10  1.000000  0.982480  362  25 -3.552714e-15  3.552714e-15  0.063468  1.000000 -2.107895
-5    0.20       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
-6    0.30       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
-7    0.40       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
-8    0.50       NaN       NaN  NaN NaN           NaN           NaN       NaN       NaN       NaN
+   qvalue    svalue    pvalue       pep     TP    FP            TN            FN       FDR       FNR      sens    cutoff
+0    0.00  0.872915  0.000186  0.000332  316.0   0.0  2.500000e+01  4.600000e+01  0.000212  0.647953  0.872928  3.559011
+1    0.01  0.998093  0.147617  0.636067  361.0   4.0  2.100000e+01  1.000000e+00  0.010111  0.031383  0.997238  1.046708
+2    0.02  1.000000  0.282890  0.897522  361.0   7.0  1.800000e+01  1.000000e+00  0.019218  0.056434  0.997238  0.574279
+3    0.05  1.000000  0.795019  1.000000  363.0  20.0  5.000000e+00 -1.000000e+00  0.051894  0.000000  1.000000 -0.823961
+4    0.10  1.000000  0.982480  1.000000  362.0  25.0  3.552714e-15 -3.552714e-15  0.063468  0.000000  1.000000 -2.107898
+5    0.20       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
+6    0.30       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
+7    0.40       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
+8    0.50       NaN       NaN       NaN    NaN   NaN           NaN           NaN       NaN       NaN       NaN       NaN
 
-transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	peptide_id_m_score	peptide_id_p_value
+transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	transition_group_id_pep	peptide_id_m_score	peptide_id_p_value	peptide_id_pep
 
-459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.00816106796	0.000211860708077	2.74762641084e-07	0.000211860708077	2.74762641084e-07
-
-
-transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	peptide_id_m_score	peptide_id_p_value
-
-459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.00816106796	0.000211860708077	2.74762641084e-07	0.000211860708077	2.74762641084e-07
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.0081615448	0.000211860722629	2.74762157915e-07	2.09948945494e-07	0.000211860722629	2.74762157915e-07	2.09948945494e-07
 
 
-transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	peptide_id_m_score	peptide_id_p_value
+transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	transition_group_id_pep	peptide_id_m_score	peptide_id_p_value	peptide_id_pep
 
-459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.00816106796	0.000211860708077	2.74762641084e-07	0.000211860708077	2.74762641084e-07
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.0081615448	0.000211860722629	2.74762157915e-07	2.09948945494e-07	0.000211860722629	2.74762157915e-07	2.09948945494e-07
+
+
+transition_group_id	run_id	decoy	main_var_xx_swath_prelim_score	var_bseries_score	var_elution_model_fit_score	var_intensity_score	var_isotope_correlation_score	var_isotope_overlap_score	var_library_corr	var_library_rmsd	var_log_sn_score	var_massdev_score	var_massdev_score_weighted	var_norm_rt_score	var_xcorr_coelution	var_xcorr_coelution_weighted	var_xcorr_shape	var_xcorr_shape_weighted	var_yseries_score	var_faulty_score	peptide_id	peak_group_rank	d_score	transition_group_id_m_score	transition_group_id_p_value	transition_group_id_pep	peptide_id_m_score	peptide_id_p_value	peptide_id_pep
+
+459_run0	0	0	5.27893972397	5.0	0.993098139763	0.930480718613	0.998724222183	0.0	0.912406027317	0.0398625209928	5.01656723022	8.83918857574	3.88453722	0.00229200161994	0.0	0.0	0.960350096226	0.970979332924	6.0		459_run0	1	5.0081615448	0.000211860722629	2.74762157915e-07	2.09948945494e-07	0.000211860722629	2.74762157915e-07	2.09948945494e-07
 
